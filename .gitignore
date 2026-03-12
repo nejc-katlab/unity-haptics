@@ -56,3 +56,7 @@ InitTestScene*.unity*
 
 # macOS
 .DS_Store
+
+# Override global *~ for Unity package samples
+!Samples~
+!Samples~/**
