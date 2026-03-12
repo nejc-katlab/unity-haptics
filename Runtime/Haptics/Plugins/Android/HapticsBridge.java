@@ -11,6 +11,12 @@ public class HapticsBridge {
     private static Vibrator vibrator;
     private static Context context;
 
+    private static final long[] NOTIFICATION_SUCCESS_PATTERN = new long[]{0, 30};
+    private static final long[] NOTIFICATION_WARNING_ERROR_PATTERN = new long[]{0, 50, 50, 50};
+
+    private static VibrationEffect[] impactEffects;
+    private static VibrationEffect[] notificationEffects;
+
     private static void ensureInit() {
         if (context != null) return;
         try {
@@ -24,6 +30,23 @@ public class HapticsBridge {
         } else {
             vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
         }
+    }
+
+    private static void ensurePredefinedEffects() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return;
+        if (impactEffects != null) return;
+        impactEffects = new VibrationEffect[]{
+            VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK),
+            VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK),
+            VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK),
+            VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK),
+            VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
+        };
+        notificationEffects = new VibrationEffect[]{
+            VibrationEffect.createPredefined(VibrationEffect.EFFECT_DOUBLE_CLICK),
+            VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK),
+            VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK)
+        };
     }
 
     public static void init(Context ctx) {
@@ -46,16 +69,9 @@ public class HapticsBridge {
         ensureInit();
         if (vibrator == null) return;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            int effect;
-            switch (style) {
-                case 0: effect = VibrationEffect.EFFECT_TICK; break;
-                case 1: effect = VibrationEffect.EFFECT_CLICK; break;
-                case 2: effect = VibrationEffect.EFFECT_HEAVY_CLICK; break;
-                case 3: effect = VibrationEffect.EFFECT_HEAVY_CLICK; break;
-                case 4: effect = VibrationEffect.EFFECT_TICK; break;
-                default: effect = VibrationEffect.EFFECT_CLICK;
-            }
-            vibrator.vibrate(VibrationEffect.createPredefined(effect));
+            ensurePredefinedEffects();
+            int index = (style >= 0 && style < impactEffects.length) ? style : 1;
+            vibrator.vibrate(impactEffects[index]);
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             long duration = style == 2 ? 50 : 20;
             vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE));
@@ -68,19 +84,14 @@ public class HapticsBridge {
         ensureInit();
         if (vibrator == null) return;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            int effect;
-            switch (type) {
-                case 0: effect = VibrationEffect.EFFECT_DOUBLE_CLICK; break;
-                case 1: effect = VibrationEffect.EFFECT_HEAVY_CLICK; break;
-                case 2: effect = VibrationEffect.EFFECT_HEAVY_CLICK; break;
-                default: effect = VibrationEffect.EFFECT_DOUBLE_CLICK;
-            }
-            vibrator.vibrate(VibrationEffect.createPredefined(effect));
+            ensurePredefinedEffects();
+            int index = (type >= 0 && type < notificationEffects.length) ? type : 0;
+            vibrator.vibrate(notificationEffects[index]);
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            long[] pattern = type == 0 ? new long[]{0, 30} : new long[]{0, 50, 50, 50};
+            long[] pattern = type == 0 ? NOTIFICATION_SUCCESS_PATTERN : NOTIFICATION_WARNING_ERROR_PATTERN;
             vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1));
         } else {
-            long[] pattern = type == 0 ? new long[]{0, 30} : new long[]{0, 50, 50, 50};
+            long[] pattern = type == 0 ? NOTIFICATION_SUCCESS_PATTERN : NOTIFICATION_WARNING_ERROR_PATTERN;
             vibrator.vibrate(pattern, -1);
         }
     }

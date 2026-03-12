@@ -120,7 +120,6 @@ Haptics.PlayPattern(pattern);
 - **Vibrate(long):** No-op. iOS has no duration-based vibration API.
 - **Rigid / Soft:** Require iOS 13+. On older iOS, behavior is undefined.
 - **PlayPattern:** Requires iOS 13+ (CoreHaptics). No-op on iOS &lt; 13.
-- **PlayPattern:** Creates a new `CHHapticEngine` per call; no engine reuse or caching.
 
 ### Android
 
