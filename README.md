@@ -143,4 +143,4 @@ Import via Package Manager: **Samples > Basic Usage > Import**. The sample provi
 
 ## License
 
-See your company's licensing terms.
+MIT License. See [LICENSE](LICENSE) for details.
