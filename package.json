@@ -1,0 +1,24 @@
+{
+  "name": "com.mythicstudio.haptics",
+  "version": "1.0.0",
+  "displayName": "Haptics",
+  "description": "Cross-platform haptics plugin for iOS and Android with simple presets and advanced custom patterns.",
+  "unity": "6000.0",
+  "keywords": [
+    "haptics",
+    "vibration",
+    "ios",
+    "android",
+    "mobile"
+  ],
+  "author": {
+    "name": "Your Company"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Usage",
+      "description": "Sample scene demonstrating impact, notification, and custom pattern playback.",
+      "path": "Samples~/BasicUsage"
+    }
+  ]
+}

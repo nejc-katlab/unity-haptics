@@ -1,0 +1,19 @@
+{
+  "name": "Haptics.Editor",
+  "rootNamespace": "MythicStudio.Haptics.Editor",
+  "references": [
+    "Haptics",
+    "UnityEditor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
