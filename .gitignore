@@ -72,3 +72,6 @@ InitTestScene*.unity*
 # Override global *~ for Unity package samples
 !Samples~
 !Samples~/**
+
+# …but never commit .DS_Store, even inside Samples~.
+**/.DS_Store
