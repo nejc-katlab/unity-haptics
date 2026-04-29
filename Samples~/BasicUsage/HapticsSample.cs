@@ -91,6 +91,24 @@ public class HapticsSample : MonoBehaviour
 
         GUILayout.Space(8);
 
+        // --- Game-grade presets ---
+        GUILayout.Label("Game-grade presets (HapticPresets)");
+        if (GUILayout.Button("Gunshot — Pistol", GUILayout.Height(36)))   Haptics.PlayPattern(HapticPresets.GunshotPistol);
+        if (GUILayout.Button("Gunshot — Rifle", GUILayout.Height(36)))    Haptics.PlayPattern(HapticPresets.GunshotRifle);
+        if (GUILayout.Button("Gunshot — Shotgun", GUILayout.Height(36)))  Haptics.PlayPattern(HapticPresets.GunshotShotgun);
+        if (GUILayout.Button("Gunshot — Sniper", GUILayout.Height(36)))   Haptics.PlayPattern(HapticPresets.GunshotSniper);
+        if (GUILayout.Button("Explosion — Small", GUILayout.Height(36)))  Haptics.PlayPattern(HapticPresets.ExplosionSmall);
+        if (GUILayout.Button("Explosion — Medium", GUILayout.Height(36))) Haptics.PlayPattern(HapticPresets.ExplosionMedium);
+        if (GUILayout.Button("Explosion — Large", GUILayout.Height(36)))  Haptics.PlayPattern(HapticPresets.ExplosionLarge);
+        if (GUILayout.Button("Explosion — Distant", GUILayout.Height(36)))Haptics.PlayPattern(HapticPresets.ExplosionDistant);
+        if (GUILayout.Button("Impact Heavy (game-grade)", GUILayout.Height(36))) Haptics.PlayPattern(HapticPresets.ImpactHeavy);
+        if (GUILayout.Button("Critical Hit", GUILayout.Height(36)))       Haptics.PlayPattern(HapticPresets.CriticalHit);
+        if (GUILayout.Button("Damage Taken", GUILayout.Height(36)))       Haptics.PlayPattern(HapticPresets.DamageTaken);
+        if (GUILayout.Button("Reload", GUILayout.Height(36)))             Haptics.PlayPattern(HapticPresets.Reload);
+        if (GUILayout.Button("Heartbeat", GUILayout.Height(36)))          Haptics.PlayPattern(HapticPresets.Heartbeat);
+
+        GUILayout.Space(8);
+
         // --- Pattern asset ---
         if (patternAsset != null)
         {

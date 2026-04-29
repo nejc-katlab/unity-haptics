@@ -4,6 +4,27 @@ All notable changes to this package are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-04-29
+
+### Added
+- **`HapticPresets`** — curated game-grade haptic pattern library built on
+  `HapticPattern.FromEvents(...)`. Significantly punchier than `Haptics.Impact(...)`,
+  which maps to Apple's UI-grade `UIImpactFeedbackGenerator` and is bounded by
+  design. Patterns:
+  - **Gunshots:** `GunshotPistol`, `GunshotRifle`, `GunshotShotgun`, `GunshotSniper`
+  - **Explosions:** `ExplosionSmall`, `ExplosionMedium`, `ExplosionLarge`, `ExplosionDistant`
+  - **Combat:** `ImpactHeavy`, `CriticalHit`, `DamageTaken`
+  - **Misc:** `Reload`, `Heartbeat`
+- Each preset is a `static readonly HapticPattern` built once at class load
+  (allocation-free). Use as `Haptics.PlayPattern(HapticPresets.ExplosionLarge);`.
+- Sample scene gains a "Game-grade presets" section with one button per preset
+  so you can A/B against the UI-grade `Impact(Heavy)` on device.
+
+### Changed
+- README: new "Game-grade presets" section explaining why `Impact(Heavy)` is a
+  UI tap rather than a game thump, and what real game studios actually use
+  (`CHHapticPattern` / `VibrationEffect.createWaveform`).
+
 ## [1.2.0] - 2026-04-29
 
 ### Added
