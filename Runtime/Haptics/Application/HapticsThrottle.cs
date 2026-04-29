@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace KatLab.Haptics.Application
+namespace Katlab.Haptics.Application
 {
     /// <summary>
     /// Lightweight throttle gate used by the public <see cref="Haptics"/> facade to suppress repeated

@@ -7,6 +7,18 @@
 /[Bb]uilds/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
+
+# Package authoring: this is a UPM package, not a Unity project. If anyone ever opens this
+# folder directly as a Unity project, Unity creates the following scaffolding at the root —
+# none of which belongs in the package itself.
+/Assets/
+/Assets.meta
+/Logs.meta
+/Packages/
+/Packages.meta
+/ProjectSettings/
+/ProjectSettings.meta
+/UserSettings.meta
 *.log
 *.blend1
 *.blend1.meta

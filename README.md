@@ -1,4 +1,4 @@
-# KatLab Haptics
+# katlab Haptics
 
 Cross-platform haptics package for Unity targeting iOS and Android. Provides simple presets, rich Core Haptics patterns (intensity + sharpness, transient + continuous events), ScriptableObject pattern assets for designer authoring, and built-in throttling for high-frequency callers.
 
@@ -20,8 +20,8 @@ dev.katlab.haptics
 ## Quick Start
 
 ```csharp
-using KatLab.Haptics;
-using KatLab.Haptics.Domain;
+using Katlab.Haptics;
+using Katlab.Haptics.Domain;
 
 // Simple presets
 Haptics.Impact(HapticImpactStyle.Light);
@@ -127,7 +127,7 @@ Author patterns in the Unity inspector and reference them from MonoBehaviours.
 void OnExplode() => explosionPattern.Play();
 ```
 
-Create one via **Assets > Create > KatLab > Haptics > Pattern**. The custom inspector shows a ▶ Play button (silent in the Editor — build to device to feel it) and exposes per-asset `intensityScale` and `timeScale` multipliers.
+Create one via **Assets > Create > katlab > Haptics > Pattern**. The custom inspector shows a ▶ Play button (silent in the Editor — build to device to feel it) and exposes per-asset `intensityScale` and `timeScale` multipliers.
 
 ## Platform Support
 

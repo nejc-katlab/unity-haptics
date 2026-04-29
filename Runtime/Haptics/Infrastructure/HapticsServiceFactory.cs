@@ -1,6 +1,6 @@
-using KatLab.Haptics.Application;
+using Katlab.Haptics.Application;
 
-namespace KatLab.Haptics.Infrastructure
+namespace Katlab.Haptics.Infrastructure
 {
     internal static class HapticsServiceFactory
     {

@@ -1,8 +1,8 @@
 #if UNITY_IOS && !UNITY_EDITOR
-using KatLab.Haptics.Application;
-using KatLab.Haptics.Domain;
+using Katlab.Haptics.Application;
+using Katlab.Haptics.Domain;
 
-namespace KatLab.Haptics.Infrastructure.iOS
+namespace Katlab.Haptics.Infrastructure.iOS
 {
     public sealed class IOSHapticsService : HapticsService
     {

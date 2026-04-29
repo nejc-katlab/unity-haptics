@@ -1,4 +1,4 @@
-namespace KatLab.Haptics.Domain
+namespace Katlab.Haptics.Domain
 {
     /// <summary>
     /// Notification haptic types. Supported on both iOS and Android.

@@ -1,4 +1,4 @@
-namespace KatLab.Haptics.Domain
+namespace Katlab.Haptics.Domain
 {
     /// <summary>
     /// A single rich haptic event. Time and Duration are in seconds; Intensity and Sharpness are 0..1.

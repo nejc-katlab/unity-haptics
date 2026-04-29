@@ -1,8 +1,8 @@
-using KatLab.Haptics.Application;
-using KatLab.Haptics.Domain;
-using KatLab.Haptics.Infrastructure;
+using Katlab.Haptics.Application;
+using Katlab.Haptics.Domain;
+using Katlab.Haptics.Infrastructure;
 
-namespace KatLab.Haptics
+namespace Katlab.Haptics
 {
     /// <summary>
     /// Cross-platform haptics API for iOS and Android.

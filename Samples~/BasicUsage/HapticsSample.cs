@@ -1,6 +1,6 @@
 using UnityEngine;
-using KatLab.Haptics;
-using KatLab.Haptics.Domain;
+using Katlab.Haptics;
+using Katlab.Haptics.Domain;
 
 public class HapticsSample : MonoBehaviour
 {

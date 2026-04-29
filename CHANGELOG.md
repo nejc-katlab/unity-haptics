@@ -12,7 +12,7 @@ All notable changes to this package are documented here. Format follows
 - `HapticPattern.FromEvents(HapticEvent[])` factory for rich patterns.
 - `HapticPatternAsset` ScriptableObject with `intensityScale` / `timeScale` multipliers, plus a
   custom inspector that includes a ▶ Play preview button. Create via
-  **Assets > Create > KatLab > Haptics > Pattern**.
+  **Assets > Create > katlab > Haptics > Pattern**.
 - iOS native `_Haptics_PlayEvents` entry point — full per-event intensity + sharpness, mixing
   `CHHapticEventTypeHapticTransient` and `CHHapticEventTypeHapticContinuous` events.
 - Android best-effort translation: rich events → `VibrationEffect.createWaveform` waveform.
@@ -33,8 +33,8 @@ All notable changes to this package are documented here. Format follows
 
 ### Changed
 - **Package rebrand** — `com.mythicstudio.haptics` → `dev.katlab.haptics`. C# namespace
-  `MythicStudio.Haptics.*` → `KatLab.Haptics.*`. Java package `com.mythicstudio.haptics` →
-  `dev.katlab.haptics`. asmdefs renamed to `KatLab.Haptics` and `KatLab.Haptics.Editor`.
+  `MythicStudio.Haptics.*` → `Katlab.Haptics.*`. Java package `com.mythicstudio.haptics` →
+  `dev.katlab.haptics`. asmdefs renamed to `Katlab.Haptics` and `Katlab.Haptics.Editor`.
   Author / license / repo metadata in `package.json` filled in.
 - Sample scene (`HapticsSample`) extended with a continuous-event "rumble" button, a
   `HapticPatternAsset` slot, and a throttle slider.

@@ -1,8 +1,8 @@
 {
-  "name": "KatLab.Haptics.Editor",
-  "rootNamespace": "KatLab.Haptics.Editor",
+  "name": "Katlab.Haptics.Editor",
+  "rootNamespace": "Katlab.Haptics.Editor",
   "references": [
-    "KatLab.Haptics",
+    "Katlab.Haptics",
     "UnityEditor"
   ],
   "includePlatforms": [

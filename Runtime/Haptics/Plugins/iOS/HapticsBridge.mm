@@ -5,7 +5,7 @@
 
 extern "C" {
 
-// KatLab.Haptics.Domain.HapticImpactStyle order is: Light(0), Medium(1), Heavy(2), Rigid(3), Soft(4).
+// Katlab.Haptics.Domain.HapticImpactStyle order is: Light(0), Medium(1), Heavy(2), Rigid(3), Soft(4).
 // UIImpactFeedbackStyle native order is: Light(0), Medium(1), Heavy(2), Soft(3), Rigid(4).
 // We map by index so the public C# enum stays stable while the native call uses the correct value.
 static const NSInteger kStyleMap[5] = {

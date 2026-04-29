@@ -1,6 +1,6 @@
 {
-  "name": "KatLab.Haptics",
-  "rootNamespace": "KatLab.Haptics",
+  "name": "Katlab.Haptics",
+  "rootNamespace": "Katlab.Haptics",
   "references": [],
   "includePlatforms": [],
   "excludePlatforms": [],

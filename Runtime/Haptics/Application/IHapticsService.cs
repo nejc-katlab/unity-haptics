@@ -1,6 +1,6 @@
-using KatLab.Haptics.Domain;
+using Katlab.Haptics.Domain;
 
-namespace KatLab.Haptics.Application
+namespace Katlab.Haptics.Application
 {
     public interface IHapticsService
     {

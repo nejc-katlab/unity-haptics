@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace KatLab.Haptics.Infrastructure.iOS
+namespace Katlab.Haptics.Infrastructure.iOS
 {
     internal static class IOSHapticsNative
     {

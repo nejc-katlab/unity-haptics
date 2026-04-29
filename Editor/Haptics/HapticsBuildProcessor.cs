@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEditor.iOS.Xcode;
 
-namespace KatLab.Haptics.Editor
+namespace Katlab.Haptics.Editor
 {
     public static class HapticsBuildProcessor
     {

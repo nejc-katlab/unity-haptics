@@ -1,4 +1,4 @@
-namespace KatLab.Haptics.Domain
+namespace Katlab.Haptics.Domain
 {
     /// <summary>
     /// Immutable haptic pattern. Two flavors are supported:

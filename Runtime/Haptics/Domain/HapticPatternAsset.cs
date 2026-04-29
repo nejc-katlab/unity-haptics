@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace KatLab.Haptics.Domain
+namespace Katlab.Haptics.Domain
 {
     /// <summary>
     /// Designer-friendly haptic pattern stored as a Unity asset. Drop this into a serialized field and
     /// call <see cref="Play"/> at runtime; or trigger preview from the inspector.
     /// </summary>
-    [CreateAssetMenu(menuName = "KatLab/Haptics/Pattern", fileName = "NewHapticPattern", order = 100)]
+    [CreateAssetMenu(menuName = "katlab/Haptics/Pattern", fileName = "NewHapticPattern", order = 100)]
     public sealed class HapticPatternAsset : ScriptableObject
     {
         [Tooltip("Sequence of events. Time + Duration in seconds; Intensity + Sharpness in 0..1.")]

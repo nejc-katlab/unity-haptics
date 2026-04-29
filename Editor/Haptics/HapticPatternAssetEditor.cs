@@ -1,9 +1,9 @@
 #if UNITY_EDITOR
-using KatLab.Haptics.Domain;
+using Katlab.Haptics.Domain;
 using UnityEditor;
 using UnityEngine;
 
-namespace KatLab.Haptics.Editor
+namespace Katlab.Haptics.Editor
 {
     [CustomEditor(typeof(HapticPatternAsset))]
     internal sealed class HapticPatternAssetEditor : UnityEditor.Editor

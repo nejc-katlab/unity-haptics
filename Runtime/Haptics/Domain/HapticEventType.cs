@@ -1,4 +1,4 @@
-namespace KatLab.Haptics.Domain
+namespace Katlab.Haptics.Domain
 {
     /// <summary>
     /// Type of a single <see cref="HapticEvent"/>.

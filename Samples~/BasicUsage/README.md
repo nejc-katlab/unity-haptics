@@ -2,8 +2,8 @@
 
 1. Import this sample via Package Manager (Samples > Basic Usage > Import).
 2. Create a new scene or use an existing one.
-3. Create an empty GameObject and add the `HapticsSample` component (uses `KatLab.Haptics` namespace).
-4. (Optional) Create a `HapticPatternAsset` via **Assets > Create > KatLab > Haptics > Pattern**, author a few events, and drop it into the `Pattern Asset` slot on the component.
+3. Create an empty GameObject and add the `HapticsSample` component (uses `Katlab.Haptics` namespace).
+4. (Optional) Create a `HapticPatternAsset` via **Assets > Create > katlab > Haptics > Pattern**, author a few events, and drop it into the `Pattern Asset` slot on the component.
 5. Build for iOS or Android and run on a device.
 
 The sample exposes:

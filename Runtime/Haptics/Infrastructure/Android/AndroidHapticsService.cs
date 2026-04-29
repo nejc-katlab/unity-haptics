@@ -1,9 +1,9 @@
 #if UNITY_ANDROID && !UNITY_EDITOR
 using UnityEngine;
-using KatLab.Haptics.Application;
-using KatLab.Haptics.Domain;
+using Katlab.Haptics.Application;
+using Katlab.Haptics.Domain;
 
-namespace KatLab.Haptics.Infrastructure.Android
+namespace Katlab.Haptics.Infrastructure.Android
 {
     public sealed class AndroidHapticsService : HapticsService
     {
