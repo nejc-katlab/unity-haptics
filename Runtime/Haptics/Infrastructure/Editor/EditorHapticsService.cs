@@ -1,8 +1,8 @@
 #if UNITY_EDITOR
-using MythicStudio.Haptics.Application;
-using MythicStudio.Haptics.Domain;
+using KatLab.Haptics.Application;
+using KatLab.Haptics.Domain;
 
-namespace MythicStudio.Haptics.Infrastructure.Editor
+namespace KatLab.Haptics.Infrastructure.Editor
 {
     public sealed class EditorHapticsService : HapticsService
     {

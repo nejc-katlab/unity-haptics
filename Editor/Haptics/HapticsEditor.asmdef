@@ -1,8 +1,8 @@
 {
-  "name": "Haptics.Editor",
-  "rootNamespace": "MythicStudio.Haptics.Editor",
+  "name": "KatLab.Haptics.Editor",
+  "rootNamespace": "KatLab.Haptics.Editor",
   "references": [
-    "Haptics",
+    "KatLab.Haptics",
     "UnityEditor"
   ],
   "includePlatforms": [

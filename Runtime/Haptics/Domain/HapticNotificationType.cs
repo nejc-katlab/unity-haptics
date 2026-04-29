@@ -1,4 +1,4 @@
-namespace MythicStudio.Haptics.Domain
+namespace KatLab.Haptics.Domain
 {
     /// <summary>
     /// Notification haptic types. Supported on both iOS and Android.

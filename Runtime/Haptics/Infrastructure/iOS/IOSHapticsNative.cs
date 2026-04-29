@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace MythicStudio.Haptics.Infrastructure.iOS
+namespace KatLab.Haptics.Infrastructure.iOS
 {
     internal static class IOSHapticsNative
     {
@@ -18,6 +18,15 @@ namespace MythicStudio.Haptics.Infrastructure.iOS
 
         [DllImport(LibraryName, EntryPoint = "_Haptics_PlayPattern")]
         public static extern void PlayPattern(System.IntPtr timings, int timingCount, System.IntPtr amplitudes, int amplitudeCount);
+
+        [DllImport(LibraryName, EntryPoint = "_Haptics_PlayEvents")]
+        public static extern void PlayEvents(
+            System.IntPtr times,
+            System.IntPtr durations,
+            System.IntPtr intensities,
+            System.IntPtr sharpnesses,
+            System.IntPtr types,
+            int count);
 #endif
     }
 }

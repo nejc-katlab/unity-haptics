@@ -1,6 +1,6 @@
 {
-  "name": "Haptics",
-  "rootNamespace": "MythicStudio.Haptics",
+  "name": "KatLab.Haptics",
+  "rootNamespace": "KatLab.Haptics",
   "references": [],
   "includePlatforms": [],
   "excludePlatforms": [],

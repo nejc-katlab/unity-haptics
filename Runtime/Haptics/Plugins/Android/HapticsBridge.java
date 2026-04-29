@@ -1,4 +1,4 @@
-package com.mythicstudio.haptics;
+package dev.katlab.haptics;
 
 import android.content.Context;
 import android.os.Build;

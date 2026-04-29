@@ -1,6 +1,6 @@
-using MythicStudio.Haptics.Application;
+using KatLab.Haptics.Application;
 
-namespace MythicStudio.Haptics.Infrastructure
+namespace KatLab.Haptics.Infrastructure
 {
     internal static class HapticsServiceFactory
     {

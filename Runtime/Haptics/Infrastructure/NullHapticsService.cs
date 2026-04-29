@@ -1,7 +1,7 @@
-using MythicStudio.Haptics.Application;
-using MythicStudio.Haptics.Domain;
+using KatLab.Haptics.Application;
+using KatLab.Haptics.Domain;
 
-namespace MythicStudio.Haptics.Infrastructure
+namespace KatLab.Haptics.Infrastructure
 {
     internal sealed class NullHapticsService : HapticsService
     {

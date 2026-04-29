@@ -1,4 +1,4 @@
-namespace MythicStudio.Haptics.Domain
+namespace KatLab.Haptics.Domain
 {
     /// <summary>
     /// Impact haptic styles. Supported on both iOS and Android.

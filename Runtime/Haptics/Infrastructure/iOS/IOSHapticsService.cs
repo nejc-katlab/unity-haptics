@@ -1,8 +1,8 @@
 #if UNITY_IOS && !UNITY_EDITOR
-using MythicStudio.Haptics.Application;
-using MythicStudio.Haptics.Domain;
+using KatLab.Haptics.Application;
+using KatLab.Haptics.Domain;
 
-namespace MythicStudio.Haptics.Infrastructure.iOS
+namespace KatLab.Haptics.Infrastructure.iOS
 {
     public sealed class IOSHapticsService : HapticsService
     {
@@ -39,27 +39,74 @@ namespace MythicStudio.Haptics.Infrastructure.iOS
         public override void PlayPattern(HapticPattern pattern)
         {
             if (!IsSupported) return;
+
+            if (pattern.HasEvents)
+            {
+                PlayRichEvents(pattern.Events);
+                return;
+            }
+
             if (pattern.Timings == null || pattern.Timings.Length == 0) return;
 
             unsafe
             {
                 fixed (long* timingsPtr = pattern.Timings)
                 {
-                    System.IntPtr amplitudesPtr = System.IntPtr.Zero;
-                    int amplitudeCount = 0;
                     if (pattern.Amplitudes != null && pattern.Amplitudes.Length > 0)
                     {
                         fixed (int* ampPtr = pattern.Amplitudes)
                         {
-                            amplitudesPtr = (System.IntPtr)ampPtr;
-                            amplitudeCount = pattern.Amplitudes.Length;
-                            IOSHapticsNative.PlayPattern((System.IntPtr)timingsPtr, pattern.Timings.Length, amplitudesPtr, amplitudeCount);
+                            IOSHapticsNative.PlayPattern(
+                                (System.IntPtr)timingsPtr, pattern.Timings.Length,
+                                (System.IntPtr)ampPtr, pattern.Amplitudes.Length);
                         }
                     }
                     else
                     {
-                        IOSHapticsNative.PlayPattern((System.IntPtr)timingsPtr, pattern.Timings.Length, System.IntPtr.Zero, 0);
+                        IOSHapticsNative.PlayPattern(
+                            (System.IntPtr)timingsPtr, pattern.Timings.Length,
+                            System.IntPtr.Zero, 0);
                     }
+                }
+            }
+        }
+
+        private static void PlayRichEvents(HapticEvent[] events)
+        {
+            int count = events.Length;
+            if (count == 0) return;
+
+            // Unpack the struct array into parallel primitive arrays so we can pin them for the native call.
+            float[] times = new float[count];
+            float[] durations = new float[count];
+            float[] intensities = new float[count];
+            float[] sharpnesses = new float[count];
+            int[] types = new int[count];
+            for (int i = 0; i < count; i++)
+            {
+                HapticEvent e = events[i];
+                times[i] = e.Time;
+                durations[i] = e.Duration;
+                intensities[i] = e.Intensity;
+                sharpnesses[i] = e.Sharpness;
+                types[i] = (int)e.Type;
+            }
+
+            unsafe
+            {
+                fixed (float* tPtr = times)
+                fixed (float* dPtr = durations)
+                fixed (float* iPtr = intensities)
+                fixed (float* sPtr = sharpnesses)
+                fixed (int* tyPtr = types)
+                {
+                    IOSHapticsNative.PlayEvents(
+                        (System.IntPtr)tPtr,
+                        (System.IntPtr)dPtr,
+                        (System.IntPtr)iPtr,
+                        (System.IntPtr)sPtr,
+                        (System.IntPtr)tyPtr,
+                        count);
                 }
             }
         }

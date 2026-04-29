@@ -1,18 +1,18 @@
-# Haptics
+# KatLab Haptics
 
-Cross-platform haptics plugin for Unity targeting iOS and Android. Provides a simple API for common presets and advanced custom pattern playback.
+Cross-platform haptics package for Unity targeting iOS and Android. Provides simple presets, rich Core Haptics patterns (intensity + sharpness, transient + continuous events), ScriptableObject pattern assets for designer authoring, and built-in throttling for high-frequency callers.
 
 ## Requirements
 
 - Unity 6 (6000.x)
-- iOS 10+ (device; simulator has no haptics)
+- iOS 10+ (device; simulator has no haptics) — Core Haptics features require iOS 13+
 - Android API 26+ (VibrationEffect); legacy vibrate for older devices
 
 ## Installation
 
 **Via Git (UPM):**
 ```
-com.mythicstudio.haptics
+dev.katlab.haptics
 ```
 
 **Embedded:** Copy the package folder into your project's `Packages/` directory.
@@ -20,8 +20,8 @@ com.mythicstudio.haptics
 ## Quick Start
 
 ```csharp
-using MythicStudio.Haptics;
-using MythicStudio.Haptics.Domain;
+using KatLab.Haptics;
+using KatLab.Haptics.Domain;
 
 // Simple presets
 Haptics.Impact(HapticImpactStyle.Light);
@@ -34,13 +34,25 @@ Haptics.Notification(HapticNotificationType.Error);
 // Android: vibrate for duration
 Haptics.Vibrate(100);
 
-// Custom pattern (timings: vibrate, pause, vibrate, pause...)
-var pattern = HapticPattern.CreateWaveform(new long[] { 0, 50, 50, 50 }, null);
-Haptics.PlayPattern(pattern);
+// Legacy waveform pattern (timings: vibrate, pause, vibrate, pause...)
+var doubleTap = HapticPattern.CreateWaveform(new long[] { 0, 50, 50, 50 }, null);
+Haptics.PlayPattern(doubleTap);
 
 // One-shot
 var oneShot = HapticPattern.CreateOneShot(50, 128);
 Haptics.PlayPattern(oneShot);
+
+// Rich Core Haptics events (per-event intensity + sharpness, transient + continuous)
+var explosion = HapticPattern.FromEvents(new[]
+{
+    HapticEvent.Transient(time: 0f,   intensity: 1.0f, sharpness: 1.0f),  // sharp peak
+    HapticEvent.Continuous(time: 0.02f, duration: 0.35f, intensity: 0.7f, sharpness: 0.2f),  // rumble
+    HapticEvent.Transient(time: 0.4f, intensity: 0.4f, sharpness: 0.5f),  // tail
+});
+Haptics.PlayPattern(explosion);
+
+// Throttling — drop calls within a min interval (useful for collision-heavy gameplay)
+Haptics.ThrottleIntervalMs = 30;
 
 if (Haptics.IsSupported) { /* ... */ }
 ```
@@ -52,10 +64,12 @@ if (Haptics.IsSupported) { /* ... */ }
 | Member | Signature | Description |
 |--------|-----------|-------------|
 | `IsSupported` | `bool` | Whether haptics are supported on the current device. `false` in Editor, iOS Simulator, and unsupported platforms. |
+| `ThrottleIntervalMs` | `int` | Minimum interval between haptic calls of the same kind. `0` (default) disables throttling. |
+| `SetThrottle` | `void SetThrottle(int milliseconds)` | Convenience setter for `ThrottleIntervalMs`. |
 | `Impact` | `void Impact(HapticImpactStyle style)` | Triggers an impact haptic. Styles: Light, Medium, Heavy, Rigid, Soft. |
 | `Notification` | `void Notification(HapticNotificationType type)` | Triggers a notification haptic. Types: Success, Warning, Error. |
 | `Vibrate` | `void Vibrate(long milliseconds)` | Vibrates for the given duration. **Android only**; no-op on iOS. |
-| `PlayPattern` | `void PlayPattern(HapticPattern pattern)` | Plays a custom haptic pattern. |
+| `PlayPattern` | `void PlayPattern(HapticPattern pattern)` | Plays a custom haptic pattern (legacy waveform or rich events). |
 
 ### Enum: `HapticImpactStyle`
 
@@ -77,35 +91,56 @@ if (Haptics.IsSupported) { /* ... */ }
 
 ### Struct: `HapticPattern`
 
-Immutable pattern with timing and optional amplitude data. Timings alternate: vibrate, pause, vibrate, pause... (even indices = vibrate duration, odd = pause).
+Immutable pattern. Two flavors:
 
-| Member | Type | Description |
-|--------|------|-------------|
-| `Timings` | `long[]` | Alternating durations in milliseconds. |
-| `Amplitudes` | `int[]` | Optional. Intensity 0–255 per vibrate segment; `null` for default. |
+1. **Legacy waveform** — `Timings` (alternating vibrate/pause durations in milliseconds) plus optional `Amplitudes` (length should match `Timings`; values at vibrate positions are used; 0–255).
+2. **Rich events** — `Events` array; on iOS this drives Core Haptics directly with per-event intensity + sharpness; on Android it's translated to a best-effort waveform.
 
 | Static Method | Signature | Description |
 |---------------|------------|-------------|
 | `CreateOneShot` | `HapticPattern CreateOneShot(long durationMs, int amplitude = -1)` | Single vibration. `amplitude` 0–255 or -1 for default. |
-| `CreateWaveform` | `HapticPattern CreateWaveform(long[] timings, int[] amplitudes = null)` | Waveform pattern. `amplitudes` optional. |
+| `CreateWaveform` | `HapticPattern CreateWaveform(long[] timings, int[] amplitudes = null)` | Waveform pattern. |
+| `FromEvents` | `HapticPattern FromEvents(HapticEvent[] events)` | Rich event pattern. |
 
-**Example:**
+### Struct: `HapticEvent`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Time` | `float` | Start time in seconds (relative to pattern start). |
+| `Duration` | `float` | Duration in seconds. Only used for `Continuous` events. |
+| `Intensity` | `float` | Strength 0..1. |
+| `Sharpness` | `float` | Perceived sharpness 0..1 (iOS only; ignored on Android). |
+| `Type` | `HapticEventType` | `Transient` (a tap) or `Continuous` (a sustained vibration). |
+
+| Static Factory | Signature |
+|---------------|-----------|
+| `Transient` | `HapticEvent.Transient(float time, float intensity = 1, float sharpness = 0.5f)` |
+| `Continuous` | `HapticEvent.Continuous(float time, float duration, float intensity = 1, float sharpness = 0.5f)` |
+
+### ScriptableObject: `HapticPatternAsset`
+
+Author patterns in the Unity inspector and reference them from MonoBehaviours.
+
 ```csharp
-// Double-tap: vibrate 50ms, pause 50ms, vibrate 50ms
-var pattern = HapticPattern.CreateWaveform(new long[] { 50, 50, 50 }, null);
-Haptics.PlayPattern(pattern);
+[SerializeField] HapticPatternAsset explosionPattern;
+
+void OnExplode() => explosionPattern.Play();
 ```
+
+Create one via **Assets > Create > KatLab > Haptics > Pattern**. The custom inspector shows a ▶ Play button (silent in the Editor — build to device to feel it) and exposes per-asset `intensityScale` and `timeScale` multipliers.
 
 ## Platform Support
 
-| Platform | Impact | Notification | Vibrate | PlayPattern |
-|----------|--------|---------------|---------|-------------|
-| iOS (device) | UIImpactFeedbackGenerator | UINotificationFeedbackGenerator | No-op | CoreHaptics (iOS 13+) |
-| iOS (simulator) | No-op | No-op | No-op | No-op |
-| Android (API 26+) | VibrationEffect predefined | VibrationEffect predefined | VibrationEffect.createOneShot | VibrationEffect.createWaveform |
-| Android (API &lt; 26) | Legacy vibrate | Legacy pattern | Legacy vibrate | Legacy pattern (no amplitude) |
-| Editor | No-op | No-op | No-op | No-op |
-| Other (standalone, etc.) | No-op | No-op | No-op | No-op |
+| Platform | Impact | Notification | Vibrate | PlayPattern (legacy) | PlayPattern (rich events) |
+|----------|--------|---------------|---------|----------------------|---------------------------|
+| iOS (device, iOS 13+) | UIImpactFeedbackGenerator | UINotificationFeedbackGenerator | No-op | CoreHaptics transient events | CoreHaptics with intensity+sharpness, transient+continuous |
+| iOS (device, iOS 10–12) | UIImpactFeedbackGenerator | UINotificationFeedbackGenerator | No-op | No-op | No-op |
+| iOS (simulator) | No-op | No-op | No-op | No-op | No-op |
+| Android (API 29+) | VibrationEffect predefined | VibrationEffect predefined | VibrationEffect.createOneShot | VibrationEffect.createWaveform | Translated to waveform |
+| Android (API 26–28) | VibrationEffect one-shot fallback | VibrationEffect waveform fallback | VibrationEffect.createOneShot | VibrationEffect.createWaveform | Translated to waveform |
+| Android (API < 26) | Legacy vibrate | Legacy pattern | Legacy vibrate | Legacy pattern (no amplitude) | Legacy pattern (no amplitude) |
+| Editor | No-op | No-op | No-op | No-op | No-op |
+| Other (standalone, etc.) | No-op | No-op | No-op | No-op | No-op |
 
 ## Limitations
 
@@ -118,28 +153,33 @@ Haptics.PlayPattern(pattern);
 ### iOS
 
 - **Vibrate(long):** No-op. iOS has no duration-based vibration API.
-- **Rigid / Soft:** Require iOS 13+. On older iOS, behavior is undefined.
-- **PlayPattern:** Requires iOS 13+ (CoreHaptics). No-op on iOS &lt; 13.
+- **PlayPattern with rich events:** Requires iOS 13+ (CoreHaptics). No-op on iOS < 13.
+- **CHHapticEngine reset:** The engine can stop on app backgrounding, audio-route changes, or hardware reset; the package wires up `stoppedHandler` and `resetHandler` and lazily restarts on next play.
 
 ### Android
 
 - **Impact Rigid / Soft:** Approximated (Rigid ≈ Heavy, Soft ≈ Light). No native equivalents.
-- **API &lt; 26:** Uses legacy `Vibrator.vibrate(long)` and `vibrate(long[], int)`. No amplitude control for patterns.
+- **API < 26:** Uses legacy `Vibrator.vibrate(long)` and `vibrate(long[], int)`. No amplitude control for patterns.
 - **API 26–28:** Uses `VibrationEffect` but not predefined effects; impact/notification use one-shot or waveform fallbacks.
 - **API 29+:** Full predefined effects for impact and notification.
-- **Amplitudes in PlayPattern:** Ignored on API &lt; 26 (legacy API).
+- **Sharpness:** Ignored. Android has no perceptual-sharpness analog to Core Haptics.
+- **Continuous events:** Translated to a single sustained slot at `intensity * 255`; effect is coarser than iOS.
 
 ### HapticPattern
 
 - **Timings:** Must be non-null and non-empty. Empty patterns are ignored.
-- **Amplitudes:** Optional. When provided, length can differ from timings; missing entries use default.
-- **Units:** All timings in milliseconds.
-- **Amplitude range:** 0–255. Values outside range are clamped on iOS.
+- **Amplitudes:** Optional. When provided, length should match `Timings`; values at vibrate positions (even indices) are used.
+- **Units (legacy):** All timings in milliseconds, amplitudes 0–255.
+- **Units (rich events):** Time and Duration in seconds, Intensity and Sharpness 0..1.
+
+### Throttling
+
+`Haptics.ThrottleIntervalMs` applies a minimum interval per kind+sub-key (e.g. each impact style has its own slot, so spamming Light won't suppress an unrelated Heavy). Default `0` disables throttling.
 
 ## Samples
 
-Import via Package Manager: **Samples > Basic Usage > Import**. The sample provides a simple UI to trigger all haptic types. Add the `HapticsSample` component to a GameObject and run on a device.
+Import via Package Manager: **Samples > Basic Usage > Import**. The sample provides a UI to trigger every haptic kind, including a continuous-event "rumble" demo and a throttle slider.
 
-## License
+## Contributing / License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT License. See [LICENSE](LICENSE) for details. PRs and issues welcome at the repository linked in `package.json`.

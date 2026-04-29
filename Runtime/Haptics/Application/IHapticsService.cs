@@ -1,6 +1,6 @@
-using MythicStudio.Haptics.Domain;
+using KatLab.Haptics.Domain;
 
-namespace MythicStudio.Haptics.Application
+namespace KatLab.Haptics.Application
 {
     public interface IHapticsService
     {

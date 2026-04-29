@@ -1,23 +1,33 @@
 {
-  "name": "com.mythicstudio.haptics",
-  "version": "1.0.0",
-  "displayName": "Haptics",
-  "description": "Cross-platform haptics plugin for iOS and Android with simple presets and advanced custom patterns.",
+  "name": "dev.katlab.haptics",
+  "version": "1.1.0",
+  "displayName": "KatLab Haptics",
+  "description": "Cross-platform haptics package for iOS and Android with simple presets, rich Core Haptics patterns (intensity + sharpness, transient + continuous), ScriptableObject pattern assets, and built-in throttling.",
   "unity": "6000.0",
+  "license": "MIT",
   "keywords": [
     "haptics",
     "vibration",
     "ios",
     "android",
-    "mobile"
+    "mobile",
+    "core-haptics"
   ],
   "author": {
-    "name": "Your Company"
+    "name": "KatLab",
+    "email": "nejc@tudamun.com",
+    "url": "https://katlab.dev"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nejc-katlab/unity-haptics.git"
+  },
+  "documentationUrl": "https://github.com/nejc-katlab/unity-haptics#readme",
+  "changelogUrl": "https://github.com/nejc-katlab/unity-haptics/blob/main/CHANGELOG.md",
   "samples": [
     {
       "displayName": "Basic Usage",
-      "description": "Sample scene demonstrating impact, notification, and custom pattern playback.",
+      "description": "Sample scene demonstrating impact, notification, custom pattern playback, continuous rumble, ScriptableObject pattern assets, and throttling.",
       "path": "Samples~/BasicUsage"
     }
   ]
