@@ -10,6 +10,21 @@ namespace Katlab.Haptics.Infrastructure.Android
         private static readonly AndroidJavaClass BridgeClass = new AndroidJavaClass("dev.katlab.haptics.HapticsBridge");
         private static bool? _isSupported;
         private static bool _unsupportedWarned;
+        private static HapticCapability? _capability;
+
+        public override HapticCapability Capability
+        {
+            get
+            {
+                if (!_capability.HasValue)
+                {
+                    int raw = BridgeClass.CallStatic<int>("getCapability");
+                    _capability = (HapticCapability)raw;
+                    HapticsLog.Info($"detected capability: {_capability.Value}");
+                }
+                return _capability.Value;
+            }
+        }
 
         public override bool IsSupported
         {

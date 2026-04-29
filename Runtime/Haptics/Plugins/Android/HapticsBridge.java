@@ -87,6 +87,45 @@ public class HapticsBridge {
         return vibrator != null && vibrator.hasVibrator();
     }
 
+    /**
+     * Returns the device's capability tier. Mirrors Katlab.Haptics.HapticCapability:
+     *   0 = None, 1 = Minimal, 2 = Basic, 3 = Rich.
+     *
+     * Rich   = API 30+ AND VibrationEffect.Composition primitives (PRIMITIVE_CLICK + PRIMITIVE_TICK)
+     *          are supported by the OEM HAL. Pixel 6+, Galaxy S22+, OnePlus 9+, etc.
+     * Basic  = API 26+ with hasAmplitudeControl(). Mid-range Androids (Galaxy A-series, etc.). ERM
+     *          motors usually live here — amplitude is honoured but ramp time is slow.
+     * Minimal= Plain on/off vibrate. Pre-API 26, or API 26+ without amplitude control.
+     * None   = No vibrator hardware at all.
+     */
+    public static int getCapability() {
+        ensureInit();
+        if (vibrator == null || !vibrator.hasVibrator()) {
+            logI("capability: None (no vibrator)");
+            return 0;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                int[] required = new int[] {
+                    VibrationEffect.Composition.PRIMITIVE_CLICK,
+                    VibrationEffect.Composition.PRIMITIVE_TICK
+                };
+                if (vibrator.areAllPrimitivesSupported(required)) {
+                    logI("capability: Rich (Composition primitives supported, API " + Build.VERSION.SDK_INT + ")");
+                    return 3;
+                }
+            } catch (Throwable t) {
+                logW("capability: areAllPrimitivesSupported threw: " + t.getMessage());
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator.hasAmplitudeControl()) {
+            logI("capability: Basic (amplitude control, API " + Build.VERSION.SDK_INT + ")");
+            return 2;
+        }
+        logI("capability: Minimal (no amplitude control or API " + Build.VERSION.SDK_INT + ")");
+        return 1;
+    }
+
     public static void impact(int style) {
         ensureInit();
         if (vibrator == null) {

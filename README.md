@@ -13,16 +13,16 @@ Cross-platform haptics package for Unity targeting iOS and Android. Provides sim
 **Via Git URL (Package Manager):** open **Window → Package Manager → + → Add package from git URL** and paste:
 
 ```
-https://github.com/nejc-katlab/unity-haptics.git#v1.3.0
+https://github.com/nejc-katlab/unity-haptics.git#v1.4.0
 ```
 
 Or add directly to `Packages/manifest.json`:
 
 ```json
-"dev.katlab.haptics": "https://github.com/nejc-katlab/unity-haptics.git#v1.3.0"
+"dev.katlab.haptics": "https://github.com/nejc-katlab/unity-haptics.git#v1.4.0"
 ```
 
-Drop the `#v1.3.0` suffix to track `main` instead of pinning a release.
+Drop the `#v1.4.0` suffix to track `main` instead of pinning a release.
 
 **Embedded:** clone or copy the repo into your project's `Packages/` directory.
 
@@ -73,6 +73,9 @@ if (Haptics.IsSupported) { /* ... */ }
 | Member | Signature | Description |
 |--------|-----------|-------------|
 | `IsSupported` | `bool` | Whether haptics are supported on the current device. `false` in Editor, iOS Simulator, and unsupported platforms. |
+| `Capability` | `HapticCapability` | Detected hardware tier (`None` / `Minimal` / `Basic` / `Rich`). Settable to force a tier for testing. See [Capability tiers](#capability-tiers-and-tier-aware-playback). |
+| `ResetCapability` | `void ResetCapability()` | Clears any explicit override and returns to auto-detection. |
+| `PlayPreset` | `void PlayPreset(HapticPreset preset)` | Plays the variant of `preset` matching the current `Capability`. |
 | `ThrottleIntervalMs` | `int` | Minimum interval between haptic calls of the same kind. `0` (default) disables throttling. |
 | `SetThrottle` | `void SetThrottle(int milliseconds)` | Convenience setter for `ThrottleIntervalMs`. |
 | `LogLevel` | `HapticsLogLevel` | Logging verbosity. Default `Warning`. Setting it propagates to native bridges. See [Logging](#logging). |
@@ -140,6 +143,27 @@ void OnExplode() => explosionPattern.Play();
 
 Create one via **Assets > Create > katlab > Haptics > Pattern**. The custom inspector shows a ▶ Play button (silent in the Editor — build to device to feel it) and exposes per-asset `intensityScale` and `timeScale` multipliers.
 
+### Capability tiers and tier-aware playback
+
+A given `HapticPattern` doesn't feel the same on every phone. iPhone 11+ and recent flagship Androids (Pixel 6+, Galaxy S22+) ship with **Linear Resonant Actuators** that ramp in <5 ms and reproduce layered events crisply. Mid-range Androids (Galaxy A-series, etc.) and older devices use **Eccentric Rotating Mass** motors that take 30–50 ms to spin up and can't reproduce sub-30 ms transients at all — a `GunshotPistol` rich pattern simply isn't felt.
+
+The package detects this on first call and exposes it as `Haptics.Capability`:
+
+| `HapticCapability` | What it means | Devices |
+|---|---|---|
+| `Rich` | Core Haptics (iOS 13+) **or** Android `VibrationEffect.Composition` primitives supported | iPhone 7+, Pixel 6+, Galaxy S22+, OnePlus 9+ |
+| `Basic` | Amplitude control without primitives (`hasAmplitudeControl()` true, API 26+) | Galaxy A-series, mid-range Androids, iOS 10–12 |
+| `Minimal` | Plain on/off vibrate, no amplitude | Older Androids (pre-API 26), low-end devices |
+| `None` | No haptic hardware | Simulator, non-mobile |
+
+Detection is automatic. You can also force a tier for testing on a higher-end device:
+
+```csharp
+Haptics.Capability = HapticCapability.Basic;   // simulate ERM behaviour on an iPhone
+// ...
+Haptics.ResetCapability();                     // back to auto-detection
+```
+
 ### Game-grade presets: `HapticPresets`
 
 `Haptics.Impact(HapticImpactStyle.Heavy)` maps to Apple's `UIImpactFeedbackGenerator` (and the equivalent `VibrationEffect.createPredefined` on Android). Apple's HIG explicitly designs these for **UI feedback only** — button taps, switches, pickers — and they're intentionally short and bounded so they don't fatigue the user during heavy UI use. That's why Heavy still feels like a button click under a virtual gunshot: it's a UI tap, not a game thump.
@@ -164,14 +188,24 @@ Real game studios (Apex Legends Mobile, PUBG Mobile, Pokémon GO, every AAA titl
 | `Reload` | Two-stage mechanical click-clack |
 | `Heartbeat` | Low-HP UI, tension cues |
 
+Each preset has **three variants** — Rich, Basic, Minimal — tuned to the corresponding `HapticCapability`. Use the tier-aware playback for cross-device parity:
+
 ```csharp
-Haptics.PlayPattern(HapticPresets.ExplosionLarge);
-Haptics.PlayPattern(HapticPresets.GunshotShotgun);
+Haptics.PlayPreset(HapticPreset.ExplosionLarge);   // picks the variant for Haptics.Capability
+Haptics.PlayPreset(HapticPreset.GunshotShotgun);
 ```
 
-Each preset is a `static readonly HapticPattern` built once at class load — calls are allocation-free. Use `HapticPattern.FromEvents(...)` directly to design your own.
+…or grab a specific variant if you want to manage selection yourself:
 
-> Full fidelity (intensity + sharpness via Core Haptics) requires iOS 13+. Android translates to `VibrationEffect.createWaveform` and drops the sharpness axis, so explosions still feel layered but a bit less crisp; that's a hardware limitation, not a package one.
+```csharp
+HapticPattern p = HapticPresets.Get(HapticPreset.ExplosionLarge);                       // current capability
+HapticPattern p = HapticPresets.Get(HapticPreset.ExplosionLarge, HapticCapability.Basic); // explicit tier
+HapticPattern p = HapticPresets.ExplosionLarge;                                          // always Rich
+```
+
+The Rich variant uses Core Haptics-style layered events. Basic uses a longer waveform with an amplitude curve (pulses ≥30 ms so ERM motors have time to ramp up). Minimal uses on/off pulses only (longer durations to convey "strength" without amplitude). All three are built once at class load — calls are allocation-free.
+
+> Sharpness is iOS-only (no analog on Android). `Haptics.Impact(...)` still maps to system UI feedback (`UIImpactFeedbackGenerator` / `VibrationEffect.createPredefined`) regardless of tier — for game events use the presets above instead.
 
 ## Platform Support
 

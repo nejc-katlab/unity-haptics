@@ -15,6 +15,30 @@ namespace Katlab.Haptics
         /// </summary>
         public static bool IsSupported => HapticsServiceFactory.Get().IsSupported;
 
+        private static HapticCapability? _capabilityOverride;
+
+        /// <summary>
+        /// The hardware/OS haptic capability tier of the current device, used to pick preset
+        /// variants in <see cref="PlayPreset"/> and <see cref="HapticPresets.Get(HapticPreset)"/>.
+        /// Auto-detected on first read; settable to force a tier for testing on a higher-end device.
+        /// </summary>
+        public static HapticCapability Capability
+        {
+            get => _capabilityOverride ?? HapticsServiceFactory.Get().Capability;
+            set
+            {
+                _capabilityOverride = value;
+                HapticsLog.Info($"capability override set to {value}");
+            }
+        }
+
+        /// <summary>Clears any explicit capability override and returns to auto-detection.</summary>
+        public static void ResetCapability()
+        {
+            _capabilityOverride = null;
+            HapticsLog.Info("capability override cleared");
+        }
+
         /// <summary>
         /// Minimum interval (milliseconds) between haptic events. <c>0</c> disables throttling (default).
         /// When set, repeated calls within this window for the same call-site key are silently dropped.
@@ -94,6 +118,19 @@ namespace Katlab.Haptics
             if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug(DescribePattern(pattern));
             if (!HapticsThrottle.ShouldFire(ThrottleKey.PlayPattern, 0)) return;
             HapticsServiceFactory.Get().PlayPattern(pattern);
+        }
+
+        /// <summary>
+        /// Plays a named preset, automatically picking the variant tuned to the current
+        /// <see cref="Capability"/>. The Rich variant uses Core Haptics-style layered events;
+        /// the Basic variant uses a longer waveform with amplitude curve (for ERM-class motors);
+        /// the Minimal variant uses on/off pulses only.
+        /// </summary>
+        public static void PlayPreset(HapticPreset preset)
+        {
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug))
+                HapticsLog.Debug($"PlayPreset({preset}) on capability {Capability}");
+            PlayPattern(HapticPresets.Get(preset, Capability));
         }
 
         // Multi-line description for Debug-level logging. Only invoked inside an IsEnabled gate.

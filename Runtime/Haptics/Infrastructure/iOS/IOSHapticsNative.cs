@@ -16,6 +16,9 @@ namespace Katlab.Haptics.Infrastructure.iOS
         [DllImport(LibraryName, EntryPoint = "_Haptics_IsSupported")]
         public static extern int IsSupported();
 
+        [DllImport(LibraryName, EntryPoint = "_Haptics_GetCapability")]
+        public static extern int GetCapability();
+
         [DllImport(LibraryName, EntryPoint = "_Haptics_PlayPattern")]
         public static extern void PlayPattern(System.IntPtr timings, int timingCount, System.IntPtr amplitudes, int amplitudeCount);
 

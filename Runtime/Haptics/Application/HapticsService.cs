@@ -6,6 +6,9 @@ namespace Katlab.Haptics.Application
     {
         public abstract bool IsSupported { get; }
 
+        /// <summary>Default returns None; iOS / Android override with platform-specific detection.</summary>
+        public virtual HapticCapability Capability => HapticCapability.None;
+
         public abstract void Impact(HapticImpactStyle style);
 
         public abstract void Notification(HapticNotificationType type);

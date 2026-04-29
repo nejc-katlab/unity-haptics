@@ -6,6 +6,9 @@ namespace Katlab.Haptics.Application
     {
         bool IsSupported { get; }
 
+        /// <summary>The hardware/OS capability tier of the current device.</summary>
+        HapticCapability Capability { get; }
+
         void Impact(HapticImpactStyle style);
 
         void Notification(HapticNotificationType type);

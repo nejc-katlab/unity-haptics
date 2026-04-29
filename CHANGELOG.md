@@ -4,6 +4,39 @@ All notable changes to this package are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-04-29
+
+### Added
+- **Capability tiers and tier-aware preset playback.** A given `HapticPattern` doesn't feel
+  the same on every phone — Galaxy A-class ERM motors physically can't reproduce sub-30 ms
+  transients. The package now detects the device's tier on first call and plays a preset
+  variant tuned to it.
+  - New `HapticCapability` enum: `None` / `Minimal` / `Basic` / `Rich`.
+  - New `Haptics.Capability` property — auto-detected, settable to force a tier for
+    testing (and `Haptics.ResetCapability()` to clear the override).
+  - Detection: iOS 13+ with `[CHHapticEngine supportsHardware]` → Rich; iOS 10–12 → Basic.
+    Android 11+ with `areAllPrimitivesSupported(PRIMITIVE_CLICK + PRIMITIVE_TICK)` → Rich;
+    API 26+ with `hasAmplitudeControl()` → Basic; otherwise Minimal.
+  - New native entry points: iOS `_Haptics_GetCapability`, Android `getCapability()`.
+- **`HapticPreset` enum** with the 13 named events and **`Haptics.PlayPreset(HapticPreset)`**
+  that picks the variant matching the device's current `Capability`.
+- **Basic and Minimal variants** for every preset built on `HapticPattern.CreateWaveform(...)`:
+  - **Basic** uses pulses ≥30 ms with amplitude curves so ERM motors have time to spin up
+    and the perceptual "weight" still comes through.
+  - **Minimal** uses on/off pulses only (slightly longer durations to convey strength
+    without amplitude).
+- New lookup methods: `HapticPresets.Get(HapticPreset)` and
+  `HapticPresets.Get(HapticPreset, HapticCapability)`.
+- Sample scene shows the detected `Capability` and adds a force-tier toggle so you can A/B
+  Rich-vs-Basic on the same hardware. The preset row now uses `PlayPreset` instead of
+  `PlayPattern` so it follows the active tier.
+
+### Changed
+- `IHapticsService` / `HapticsService` gained `Capability { get; }` (default `None`;
+  iOS / Android override).
+- README: new "Capability tiers and tier-aware playback" section explaining LRA-vs-ERM
+  behaviour and which tier each device falls into.
+
 ## [1.3.0] - 2026-04-29
 
 ### Added

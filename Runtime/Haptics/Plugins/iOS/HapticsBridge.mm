@@ -89,6 +89,23 @@ int _Haptics_IsSupported(void) {
 #endif
 }
 
+// 0=None, 1=Minimal, 2=Basic, 3=Rich. Mirrors Katlab.Haptics.HapticCapability.
+int _Haptics_GetCapability(void) {
+#if TARGET_OS_SIMULATOR
+    return 0; // None
+#else
+    if (@available(iOS 13.0, *)) {
+        if ([CHHapticEngine supportsHardware]) {
+            KATLAB_LOG_INFO(@"capability: Rich (Core Haptics + supportsHardware)");
+            return 3; // Rich
+        }
+    }
+    // iOS 10–12 with Taptic Engine — UIImpact / UINotification work, but rich patterns can't be played.
+    KATLAB_LOG_INFO(@"capability: Basic (no Core Haptics support)");
+    return 2; // Basic
+#endif
+}
+
 API_AVAILABLE(ios(13.0))
 static CHHapticEngine* _Haptics_GetEngine(void) {
     static CHHapticEngine* s_engine = nil;

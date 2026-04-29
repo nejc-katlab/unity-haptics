@@ -8,6 +8,21 @@ namespace Katlab.Haptics.Infrastructure.iOS
     {
         private static int? _isSupported;
         private static bool _unsupportedWarned;
+        private static HapticCapability? _capability;
+
+        public override HapticCapability Capability
+        {
+            get
+            {
+                if (!_capability.HasValue)
+                {
+                    int raw = IOSHapticsNative.GetCapability();
+                    _capability = (HapticCapability)raw;
+                    HapticsLog.Info($"detected capability: {_capability.Value}");
+                }
+                return _capability.Value;
+            }
+        }
 
         public override bool IsSupported
         {

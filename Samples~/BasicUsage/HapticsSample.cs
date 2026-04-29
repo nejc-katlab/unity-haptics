@@ -16,7 +16,20 @@ public class HapticsSample : MonoBehaviour
         GUILayout.BeginArea(new Rect(20, 20, Screen.width - 40, Screen.height - 40));
         _scroll = GUILayout.BeginScrollView(_scroll);
 
-        GUILayout.Label($"Haptics supported: {Haptics.IsSupported}");
+        GUILayout.Label($"Haptics supported: {Haptics.IsSupported}    Detected capability: {Haptics.Capability}");
+        GUILayout.Space(8);
+
+        // --- Force capability (for testing on a higher-end device) ---
+        GUILayout.Label("Force capability tier (for testing)");
+        GUILayout.BeginHorizontal();
+        foreach (HapticCapability cap in System.Enum.GetValues(typeof(HapticCapability)))
+        {
+            bool selected = Haptics.Capability == cap;
+            bool newSelected = GUILayout.Toggle(selected, cap.ToString(), GUI.skin.button, GUILayout.Height(28));
+            if (newSelected && !selected) Haptics.Capability = cap;
+        }
+        if (GUILayout.Button("Reset (auto)", GUILayout.Height(28))) Haptics.ResetCapability();
+        GUILayout.EndHorizontal();
         GUILayout.Space(8);
 
         // --- Log level ---
@@ -91,21 +104,21 @@ public class HapticsSample : MonoBehaviour
 
         GUILayout.Space(8);
 
-        // --- Game-grade presets ---
-        GUILayout.Label("Game-grade presets (HapticPresets)");
-        if (GUILayout.Button("Gunshot — Pistol", GUILayout.Height(36)))   Haptics.PlayPattern(HapticPresets.GunshotPistol);
-        if (GUILayout.Button("Gunshot — Rifle", GUILayout.Height(36)))    Haptics.PlayPattern(HapticPresets.GunshotRifle);
-        if (GUILayout.Button("Gunshot — Shotgun", GUILayout.Height(36)))  Haptics.PlayPattern(HapticPresets.GunshotShotgun);
-        if (GUILayout.Button("Gunshot — Sniper", GUILayout.Height(36)))   Haptics.PlayPattern(HapticPresets.GunshotSniper);
-        if (GUILayout.Button("Explosion — Small", GUILayout.Height(36)))  Haptics.PlayPattern(HapticPresets.ExplosionSmall);
-        if (GUILayout.Button("Explosion — Medium", GUILayout.Height(36))) Haptics.PlayPattern(HapticPresets.ExplosionMedium);
-        if (GUILayout.Button("Explosion — Large", GUILayout.Height(36)))  Haptics.PlayPattern(HapticPresets.ExplosionLarge);
-        if (GUILayout.Button("Explosion — Distant", GUILayout.Height(36)))Haptics.PlayPattern(HapticPresets.ExplosionDistant);
-        if (GUILayout.Button("Impact Heavy (game-grade)", GUILayout.Height(36))) Haptics.PlayPattern(HapticPresets.ImpactHeavy);
-        if (GUILayout.Button("Critical Hit", GUILayout.Height(36)))       Haptics.PlayPattern(HapticPresets.CriticalHit);
-        if (GUILayout.Button("Damage Taken", GUILayout.Height(36)))       Haptics.PlayPattern(HapticPresets.DamageTaken);
-        if (GUILayout.Button("Reload", GUILayout.Height(36)))             Haptics.PlayPattern(HapticPresets.Reload);
-        if (GUILayout.Button("Heartbeat", GUILayout.Height(36)))          Haptics.PlayPattern(HapticPresets.Heartbeat);
+        // --- Game-grade presets (tier-aware via Haptics.PlayPreset) ---
+        GUILayout.Label($"Game-grade presets — playing variant for {Haptics.Capability}");
+        if (GUILayout.Button("Gunshot — Pistol", GUILayout.Height(36)))   Haptics.PlayPreset(HapticPreset.GunshotPistol);
+        if (GUILayout.Button("Gunshot — Rifle", GUILayout.Height(36)))    Haptics.PlayPreset(HapticPreset.GunshotRifle);
+        if (GUILayout.Button("Gunshot — Shotgun", GUILayout.Height(36)))  Haptics.PlayPreset(HapticPreset.GunshotShotgun);
+        if (GUILayout.Button("Gunshot — Sniper", GUILayout.Height(36)))   Haptics.PlayPreset(HapticPreset.GunshotSniper);
+        if (GUILayout.Button("Explosion — Small", GUILayout.Height(36)))  Haptics.PlayPreset(HapticPreset.ExplosionSmall);
+        if (GUILayout.Button("Explosion — Medium", GUILayout.Height(36))) Haptics.PlayPreset(HapticPreset.ExplosionMedium);
+        if (GUILayout.Button("Explosion — Large", GUILayout.Height(36)))  Haptics.PlayPreset(HapticPreset.ExplosionLarge);
+        if (GUILayout.Button("Explosion — Distant", GUILayout.Height(36)))Haptics.PlayPreset(HapticPreset.ExplosionDistant);
+        if (GUILayout.Button("Impact Heavy (game-grade)", GUILayout.Height(36))) Haptics.PlayPreset(HapticPreset.ImpactHeavy);
+        if (GUILayout.Button("Critical Hit", GUILayout.Height(36)))       Haptics.PlayPreset(HapticPreset.CriticalHit);
+        if (GUILayout.Button("Damage Taken", GUILayout.Height(36)))       Haptics.PlayPreset(HapticPreset.DamageTaken);
+        if (GUILayout.Button("Reload", GUILayout.Height(36)))             Haptics.PlayPreset(HapticPreset.Reload);
+        if (GUILayout.Button("Heartbeat", GUILayout.Height(36)))          Haptics.PlayPreset(HapticPreset.Heartbeat);
 
         GUILayout.Space(8);
 
