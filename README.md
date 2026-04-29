@@ -10,12 +10,21 @@ Cross-platform haptics package for Unity targeting iOS and Android. Provides sim
 
 ## Installation
 
-**Via Git (UPM):**
+**Via Git URL (Package Manager):** open **Window → Package Manager → + → Add package from git URL** and paste:
+
 ```
-dev.katlab.haptics
+https://github.com/nejc-katlab/unity-haptics.git#v1.2.0
 ```
 
-**Embedded:** Copy the package folder into your project's `Packages/` directory.
+Or add directly to `Packages/manifest.json`:
+
+```json
+"dev.katlab.haptics": "https://github.com/nejc-katlab/unity-haptics.git#v1.2.0"
+```
+
+Drop the `#v1.2.0` suffix to track `main` instead of pinning a release.
+
+**Embedded:** clone or copy the repo into your project's `Packages/` directory.
 
 ## Quick Start
 
@@ -66,6 +75,8 @@ if (Haptics.IsSupported) { /* ... */ }
 | `IsSupported` | `bool` | Whether haptics are supported on the current device. `false` in Editor, iOS Simulator, and unsupported platforms. |
 | `ThrottleIntervalMs` | `int` | Minimum interval between haptic calls of the same kind. `0` (default) disables throttling. |
 | `SetThrottle` | `void SetThrottle(int milliseconds)` | Convenience setter for `ThrottleIntervalMs`. |
+| `LogLevel` | `HapticsLogLevel` | Logging verbosity. Default `Warning`. Setting it propagates to native bridges. See [Logging](#logging). |
+| `SetLogLevel` | `void SetLogLevel(HapticsLogLevel level)` | Convenience setter for `LogLevel`. |
 | `Impact` | `void Impact(HapticImpactStyle style)` | Triggers an impact haptic. Styles: Light, Medium, Heavy, Rigid, Soft. |
 | `Notification` | `void Notification(HapticNotificationType type)` | Triggers a notification haptic. Types: Success, Warning, Error. |
 | `Vibrate` | `void Vibrate(long milliseconds)` | Vibrates for the given duration. **Android only**; no-op on iOS. |
@@ -175,6 +186,30 @@ Create one via **Assets > Create > katlab > Haptics > Pattern**. The custom insp
 ### Throttling
 
 `Haptics.ThrottleIntervalMs` applies a minimum interval per kind+sub-key (e.g. each impact style has its own slot, so spamming Light won't suppress an unrelated Heavy). Default `0` disables throttling.
+
+## Logging
+
+The package emits diagnostic logs through `UnityEngine.Debug.Log*` (C# side) and `NSLog` / `android.util.Log` (native side). Default verbosity is **Warning** — out of the box you get nothing unless something actually goes wrong (engine init failure, empty pattern, simulator detection).
+
+```csharp
+using Katlab.Haptics;
+
+Haptics.LogLevel = HapticsLogLevel.Debug;   // verbose tracing
+// ...
+Haptics.LogLevel = HapticsLogLevel.None;    // fully silent (production)
+```
+
+Levels (each includes everything above it):
+
+| Level | What you see |
+|-------|--------------|
+| `None` | Nothing — even errors suppressed. |
+| `Error` | Native-bridge failures (CHHapticEngine init, vibrator unavailable, etc.). |
+| `Warning` *(default)* | Errors + recoverable issues (empty patterns, simulator, route changes). |
+| `Info` | + service selection, log-level changes, throttle setter, engine lifecycle. |
+| `Debug` | + per-call tracing with full pattern event dumps and throttle decisions. |
+
+C#-side messages appear in the Unity Console (prefixed `[katlab.Haptics]`). Native-side messages appear in **Xcode Console** / **Console.app** for iOS and **`adb logcat -s katlab.Haptics`** for Android — they do **not** appear in the Unity Console. Setting `Haptics.LogLevel` propagates the level to the native bridges automatically.
 
 ## Samples
 

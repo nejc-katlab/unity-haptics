@@ -1,3 +1,4 @@
+using System.Text;
 using Katlab.Haptics.Application;
 using Katlab.Haptics.Domain;
 using Katlab.Haptics.Infrastructure;
@@ -30,11 +31,32 @@ namespace Katlab.Haptics
         public static void SetThrottle(int milliseconds) => HapticsThrottle.IntervalMs = milliseconds;
 
         /// <summary>
+        /// Logging verbosity. Default is <see cref="HapticsLogLevel.Warning"/>.
+        /// Setting this also propagates the level to the native iOS / Android bridges; their messages
+        /// appear in Xcode Console / <c>adb logcat</c>, not in the Unity Console.
+        /// </summary>
+        public static HapticsLogLevel LogLevel
+        {
+            get => HapticsLog.Level;
+            set
+            {
+                if (HapticsLog.Level == value) return;
+                HapticsLog.Level = value;
+                HapticsLog.Info($"log level set to {value}");
+                HapticsServiceFactory.Get().SetLogLevel(value);
+            }
+        }
+
+        /// <summary>Convenience for <see cref="LogLevel"/>.</summary>
+        public static void SetLogLevel(HapticsLogLevel level) => LogLevel = level;
+
+        /// <summary>
         /// Triggers an impact haptic with the given style.
         /// All styles work on both iOS and Android; Android approximates Rigid as Heavy and Soft as Light.
         /// </summary>
         public static void Impact(HapticImpactStyle style)
         {
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"Impact({style})");
             if (!HapticsThrottle.ShouldFire(ThrottleKey.Impact, (int)style)) return;
             HapticsServiceFactory.Get().Impact(style);
         }
@@ -45,6 +67,7 @@ namespace Katlab.Haptics
         /// </summary>
         public static void Notification(HapticNotificationType type)
         {
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"Notification({type})");
             if (!HapticsThrottle.ShouldFire(ThrottleKey.Notification, (int)type)) return;
             HapticsServiceFactory.Get().Notification(type);
         }
@@ -55,6 +78,7 @@ namespace Katlab.Haptics
         /// </summary>
         public static void Vibrate(long milliseconds)
         {
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"Vibrate({milliseconds}ms)");
             if (!HapticsThrottle.ShouldFire(ThrottleKey.Vibrate, 0)) return;
             HapticsServiceFactory.Get().Vibrate(milliseconds);
         }
@@ -67,8 +91,40 @@ namespace Katlab.Haptics
         /// </summary>
         public static void PlayPattern(HapticPattern pattern)
         {
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug(DescribePattern(pattern));
             if (!HapticsThrottle.ShouldFire(ThrottleKey.PlayPattern, 0)) return;
             HapticsServiceFactory.Get().PlayPattern(pattern);
+        }
+
+        // Multi-line description for Debug-level logging. Only invoked inside an IsEnabled gate.
+        private static string DescribePattern(HapticPattern pattern)
+        {
+            if (pattern.HasEvents)
+            {
+                var sb = new StringBuilder(64 + pattern.Events.Length * 80);
+                sb.Append("PlayPattern: ").Append(pattern.Events.Length).Append(" events");
+                for (int i = 0; i < pattern.Events.Length; i++)
+                {
+                    HapticEvent e = pattern.Events[i];
+                    sb.Append("\n  [").Append(i).Append("] t=").AppendFormat("{0:0.000}", e.Time).Append("s ");
+                    if (e.Type == HapticEventType.Continuous)
+                    {
+                        sb.Append("continuous intensity=").AppendFormat("{0:0.00}", e.Intensity)
+                          .Append(" sharpness=").AppendFormat("{0:0.00}", e.Sharpness)
+                          .Append(" duration=").AppendFormat("{0:0.000}", e.Duration).Append('s');
+                    }
+                    else
+                    {
+                        sb.Append("transient  intensity=").AppendFormat("{0:0.00}", e.Intensity)
+                          .Append(" sharpness=").AppendFormat("{0:0.00}", e.Sharpness);
+                    }
+                }
+                return sb.ToString();
+            }
+
+            string timings = pattern.Timings != null ? "[" + string.Join(",", pattern.Timings) + "]" : "null";
+            string amps = pattern.Amplitudes != null ? "[" + string.Join(",", pattern.Amplitudes) + "]" : "null";
+            return $"PlayPattern: legacy waveform timings={timings} amplitudes={amps}";
         }
     }
 }

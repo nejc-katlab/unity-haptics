@@ -9,6 +9,7 @@ namespace Katlab.Haptics.Infrastructure.Android
     {
         private static readonly AndroidJavaClass BridgeClass = new AndroidJavaClass("dev.katlab.haptics.HapticsBridge");
         private static bool? _isSupported;
+        private static bool _unsupportedWarned;
 
         public override bool IsSupported
         {
@@ -17,26 +18,39 @@ namespace Katlab.Haptics.Infrastructure.Android
                 if (!_isSupported.HasValue)
                 {
                     _isSupported = BridgeClass.CallStatic<bool>("isSupported");
+                    if (!_isSupported.Value && !_unsupportedWarned)
+                    {
+                        _unsupportedWarned = true;
+                        HapticsLog.Warning("Android Vibrator service unavailable on this device");
+                    }
                 }
                 return _isSupported.Value;
             }
         }
 
+        public override void SetLogLevel(HapticsLogLevel level)
+        {
+            BridgeClass.CallStatic("setLogLevel", (int)level);
+        }
+
         public override void Impact(HapticImpactStyle style)
         {
             if (!IsSupported) return;
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"native impact(style={(int)style})");
             BridgeClass.CallStatic("impact", (int)style);
         }
 
         public override void Notification(HapticNotificationType type)
         {
             if (!IsSupported) return;
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"native notification(type={(int)type})");
             BridgeClass.CallStatic("notification", (int)type);
         }
 
         public override void Vibrate(long milliseconds)
         {
             if (!IsSupported) return;
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"native vibrate({milliseconds}ms)");
             BridgeClass.CallStatic("vibrate", milliseconds);
         }
 
@@ -48,12 +62,23 @@ namespace Katlab.Haptics.Infrastructure.Android
             {
                 if (TryEventsToWaveform(pattern.Events, out long[] timings, out int[] amplitudes))
                 {
+                    if (HapticsLog.IsEnabled(HapticsLogLevel.Debug))
+                        HapticsLog.Debug($"native vibratePattern (from {pattern.Events.Length} events) " +
+                                         $"timings=[{string.Join(",", timings)}] amplitudes=[{string.Join(",", amplitudes)}]");
                     BridgeClass.CallStatic("vibratePattern", timings, amplitudes);
                 }
                 return;
             }
 
-            if (pattern.Timings == null || pattern.Timings.Length == 0) return;
+            if (pattern.Timings == null || pattern.Timings.Length == 0)
+            {
+                HapticsLog.Warning("PlayPattern called with empty pattern (no timings, no events) — ignored");
+                return;
+            }
+
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug))
+                HapticsLog.Debug($"native vibratePattern timings=[{string.Join(",", pattern.Timings)}] " +
+                                 $"amplitudes={(pattern.Amplitudes == null ? "null" : "[" + string.Join(",", pattern.Amplitudes) + "]")}");
             BridgeClass.CallStatic("vibratePattern", pattern.Timings, pattern.Amplitudes);
         }
 
@@ -67,8 +92,6 @@ namespace Katlab.Haptics.Infrastructure.Android
             if (events == null || events.Length == 0) return false;
 
             const long TransientDurationMs = 10;
-            // (vibrate, pause) pairs per event => up to 2*N entries. We always start with a leading 0
-            // pause so even-indexed slots are vibrate slots.
             var t = new System.Collections.Generic.List<long>(events.Length * 2 + 1);
             var a = new System.Collections.Generic.List<int>(events.Length * 2 + 1);
             t.Add(0);

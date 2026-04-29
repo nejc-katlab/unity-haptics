@@ -9,6 +9,7 @@ public class HapticsSample : MonoBehaviour
 
     private int _throttleMs;
     private Vector2 _scroll;
+    private HapticsLogLevel _logLevel = HapticsLogLevel.Warning;
 
     private void OnGUI()
     {
@@ -16,6 +17,22 @@ public class HapticsSample : MonoBehaviour
         _scroll = GUILayout.BeginScrollView(_scroll);
 
         GUILayout.Label($"Haptics supported: {Haptics.IsSupported}");
+        GUILayout.Space(8);
+
+        // --- Log level ---
+        GUILayout.Label($"Log level: {_logLevel}");
+        GUILayout.BeginHorizontal();
+        foreach (HapticsLogLevel lvl in System.Enum.GetValues(typeof(HapticsLogLevel)))
+        {
+            bool selected = _logLevel == lvl;
+            bool newSelected = GUILayout.Toggle(selected, lvl.ToString(), GUI.skin.button, GUILayout.Height(30));
+            if (newSelected && !selected)
+            {
+                _logLevel = lvl;
+                Haptics.LogLevel = lvl;
+            }
+        }
+        GUILayout.EndHorizontal();
         GUILayout.Space(8);
 
         // --- Impacts ---

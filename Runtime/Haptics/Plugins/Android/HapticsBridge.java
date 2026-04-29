@@ -17,11 +17,27 @@ public class HapticsBridge {
     private static VibrationEffect[] impactEffects;
     private static VibrationEffect[] notificationEffects;
 
+    // Logging — mirrors Katlab.Haptics.HapticsLogLevel: 0=None, 1=Error, 2=Warning (default), 3=Info, 4=Debug.
+    // Set from C# via setLogLevel; output goes to logcat under tag "katlab.Haptics", not Unity's Console.
+    private static final String TAG = "katlab.Haptics";
+    private static int sLogLevel = 2;
+
+    public static void setLogLevel(int level) {
+        sLogLevel = level;
+        logI("log level set to " + level);
+    }
+
+    private static void logE(String m) { if (sLogLevel >= 1) android.util.Log.e(TAG, m); }
+    private static void logW(String m) { if (sLogLevel >= 2) android.util.Log.w(TAG, m); }
+    private static void logI(String m) { if (sLogLevel >= 3) android.util.Log.i(TAG, m); }
+    private static void logD(String m) { if (sLogLevel >= 4) android.util.Log.d(TAG, m); }
+
     private static void ensureInit() {
         if (context != null) return;
         try {
             context = UnityPlayer.currentActivity.getApplicationContext();
         } catch (Exception e) {
+            logE("ensureInit: UnityPlayer.currentActivity unavailable: " + e.getMessage());
             return;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -29,6 +45,11 @@ public class HapticsBridge {
             vibrator = vm != null ? vm.getDefaultVibrator() : null;
         } else {
             vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        }
+        if (vibrator == null) {
+            logW("Vibrator service unavailable on this device (API " + Build.VERSION.SDK_INT + ")");
+        } else {
+            logI("Vibrator initialised (API " + Build.VERSION.SDK_INT + ")");
         }
     }
 
@@ -47,6 +68,7 @@ public class HapticsBridge {
             VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK),
             VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK)
         };
+        logD("predefined effect cache built");
     }
 
     public static void init(Context ctx) {
@@ -67,7 +89,11 @@ public class HapticsBridge {
 
     public static void impact(int style) {
         ensureInit();
-        if (vibrator == null) return;
+        if (vibrator == null) {
+            logW("impact: vibrator unavailable");
+            return;
+        }
+        logD("impact(style=" + style + ") API=" + Build.VERSION.SDK_INT);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ensurePredefinedEffects();
             int index = (style >= 0 && style < impactEffects.length) ? style : 1;
@@ -82,7 +108,11 @@ public class HapticsBridge {
 
     public static void notification(int type) {
         ensureInit();
-        if (vibrator == null) return;
+        if (vibrator == null) {
+            logW("notification: vibrator unavailable");
+            return;
+        }
+        logD("notification(type=" + type + ") API=" + Build.VERSION.SDK_INT);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ensurePredefinedEffects();
             int index = (type >= 0 && type < notificationEffects.length) ? type : 0;
@@ -98,7 +128,11 @@ public class HapticsBridge {
 
     public static void vibrate(long milliseconds) {
         ensureInit();
-        if (vibrator == null) return;
+        if (vibrator == null) {
+            logW("vibrate: vibrator unavailable");
+            return;
+        }
+        logD("vibrate(" + milliseconds + "ms)");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE));
         } else {
@@ -108,7 +142,14 @@ public class HapticsBridge {
 
     public static void vibratePattern(long[] timings, int[] amplitudes) {
         ensureInit();
-        if (vibrator == null) return;
+        if (vibrator == null) {
+            logW("vibratePattern: vibrator unavailable");
+            return;
+        }
+        if (sLogLevel >= 4) {
+            logD("vibratePattern timings.length=" + (timings == null ? 0 : timings.length)
+                + " amplitudes.length=" + (amplitudes == null ? 0 : amplitudes.length));
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (amplitudes == null || amplitudes.length == 0) {
                 vibrator.vibrate(VibrationEffect.createWaveform(timings, -1));

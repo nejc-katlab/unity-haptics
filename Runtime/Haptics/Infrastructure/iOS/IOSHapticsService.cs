@@ -7,6 +7,7 @@ namespace Katlab.Haptics.Infrastructure.iOS
     public sealed class IOSHapticsService : HapticsService
     {
         private static int? _isSupported;
+        private static bool _unsupportedWarned;
 
         public override bool IsSupported
         {
@@ -15,25 +16,38 @@ namespace Katlab.Haptics.Infrastructure.iOS
                 if (!_isSupported.HasValue)
                 {
                     _isSupported = IOSHapticsNative.IsSupported();
+                    if (_isSupported.Value == 0 && !_unsupportedWarned)
+                    {
+                        _unsupportedWarned = true;
+                        HapticsLog.Warning("iOS haptics not supported on this device (likely simulator)");
+                    }
                 }
                 return _isSupported.Value != 0;
             }
         }
 
+        public override void SetLogLevel(HapticsLogLevel level)
+        {
+            IOSHapticsNative.SetLogLevel((int)level);
+        }
+
         public override void Impact(HapticImpactStyle style)
         {
             if (!IsSupported) return;
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"native Impact(style={(int)style})");
             IOSHapticsNative.Impact((int)style);
         }
 
         public override void Notification(HapticNotificationType type)
         {
             if (!IsSupported) return;
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"native Notification(type={(int)type})");
             IOSHapticsNative.Notification((int)type);
         }
 
         public override void Vibrate(long milliseconds)
         {
+            // iOS has no duration-based vibration API; intentional no-op.
         }
 
         public override void PlayPattern(HapticPattern pattern)
@@ -46,7 +60,14 @@ namespace Katlab.Haptics.Infrastructure.iOS
                 return;
             }
 
-            if (pattern.Timings == null || pattern.Timings.Length == 0) return;
+            if (pattern.Timings == null || pattern.Timings.Length == 0)
+            {
+                HapticsLog.Warning("PlayPattern called with empty pattern (no timings, no events) — ignored");
+                return;
+            }
+
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug))
+                HapticsLog.Debug($"native PlayPattern(timings={pattern.Timings.Length}, amplitudes={(pattern.Amplitudes?.Length ?? 0)})");
 
             unsafe
             {
@@ -75,6 +96,9 @@ namespace Katlab.Haptics.Infrastructure.iOS
         {
             int count = events.Length;
             if (count == 0) return;
+
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug))
+                HapticsLog.Debug($"native PlayEvents(count={count})");
 
             // Unpack the struct array into parallel primitive arrays so we can pin them for the native call.
             float[] times = new float[count];

@@ -19,6 +19,7 @@ namespace Katlab.Haptics.Infrastructure
 #else
             _instance = new NullHapticsService();
 #endif
+            HapticsLog.Info($"selected service: {_instance.GetType().Name}");
             return _instance;
         }
     }

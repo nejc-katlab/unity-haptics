@@ -27,6 +27,9 @@ namespace Katlab.Haptics.Infrastructure.iOS
             System.IntPtr sharpnesses,
             System.IntPtr types,
             int count);
+
+        [DllImport(LibraryName, EntryPoint = "_Haptics_SetLogLevel")]
+        public static extern void SetLogLevel(int level);
 #endif
     }
 }

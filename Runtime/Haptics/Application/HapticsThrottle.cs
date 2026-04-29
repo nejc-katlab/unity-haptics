@@ -17,11 +17,22 @@ namespace Katlab.Haptics.Application
         private static readonly long[] LastFireTicks = new long[KindCount * SubKeyCount];
         private static readonly Stopwatch Clock = Stopwatch.StartNew();
 
-        public static int IntervalMs;
+        private static int _intervalMs;
+
+        public static int IntervalMs
+        {
+            get => _intervalMs;
+            set
+            {
+                if (_intervalMs == value) return;
+                _intervalMs = value;
+                HapticsLog.Info($"throttle interval set to {value} ms");
+            }
+        }
 
         public static bool ShouldFire(ThrottleKey kind, int subKey)
         {
-            int interval = IntervalMs;
+            int interval = _intervalMs;
             if (interval <= 0) return true;
 
             int kindIndex = (int)kind;
@@ -33,7 +44,12 @@ namespace Katlab.Haptics.Application
             int slot = kindIndex * SubKeyCount + sub;
             long now = Clock.ElapsedMilliseconds;
             long last = LastFireTicks[slot];
-            if (last != 0 && now - last < interval) return false;
+            if (last != 0 && now - last < interval)
+            {
+                if (HapticsLog.IsEnabled(HapticsLogLevel.Debug))
+                    HapticsLog.Debug($"throttled {kind}[{sub}] — last fire {now - last} ms ago, threshold {interval} ms");
+                return false;
+            }
 
             LastFireTicks[slot] = now;
             return true;

@@ -4,6 +4,29 @@ All notable changes to this package are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-04-29
+
+### Added
+- **Configurable logging.** New `Haptics.LogLevel` (`HapticsLogLevel.None`/`Error`/`Warning`/`Info`/`Debug`,
+  default `Warning`) plus `Haptics.SetLogLevel(int)` convenience. Setting the level propagates to the
+  native iOS and Android bridges automatically.
+  - C# layer routes through Unity's Debug.Log family with a `[katlab.Haptics]` prefix.
+  - iOS bridge logs via `NSLog` with prefix `[katlab.Haptics][native]` (visible in Xcode Console / Console.app).
+  - Android bridge logs via `android.util.Log` under tag `katlab.Haptics` (visible via `adb logcat -s katlab.Haptics`).
+  - Debug level dumps every event of a played pattern (time/duration/intensity/sharpness/type), every
+    throttle suppression with the threshold and elapsed delta, and every native call.
+  - Error level surfaces engine init/start failures, pattern construction errors, and
+    vibrator-service unavailability — previously all silent.
+- New entry points: `_Haptics_SetLogLevel` (iOS native) and `HapticsBridge.setLogLevel(int)` (Android native).
+- Sample scene: log level picker row at the top of the GUI.
+
+### Changed
+- README: rewrote the Installation section to use the actual git-URL form
+  (`"dev.katlab.haptics": "https://github.com/nejc-katlab/unity-haptics.git#v1.2.0"`),
+  added a Logging section, and added `LogLevel` / `SetLogLevel` to the API reference table.
+- `IHapticsService` and `HapticsService` gained a `SetLogLevel(HapticsLogLevel)` method
+  (default no-op; iOS/Android override to forward to native).
+
 ## [1.1.0] - 2026-04-29
 
 ### Added
