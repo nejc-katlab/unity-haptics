@@ -4,6 +4,57 @@ All notable changes to this package are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-04-29
+
+### Added
+- **Engine-agnostic native bridges.** `HapticsBridge.java` no longer imports
+  `com.unity3d.player.UnityPlayer` and compiles standalone in any Android project.
+  Initialisation moves to a mandatory `HapticsBridge.init(Context)` call; the Unity
+  C# wrapper does the JNI handoff to `UnityPlayer.currentActivity` so existing Unity
+  callers see no behaviour change. Native iOS already had no Unity dependency — it
+  remains a pure Obj-C++ file.
+- **Inline pattern construction API on both platforms.**
+  - **iOS:** `_Haptics_PlayEvents` ABI changed from five parallel float/int arrays to
+    a single `KatlabHapticEvent` struct array. Native iOS users can author patterns
+    inline with C99 designated initializers.
+  - **iOS:** new `KatlabHapticPattern` Obj-C class (`KatlabHapticPattern.h` / `.mm`)
+    — fluent builder with `tapAt:intensity:sharpness:` and
+    `holdAt:duration:intensity:sharpness:` chaining. Bridges cleanly to Swift.
+  - **Android:** new `HapticsPatternBuilder` Java class with `tap(time, intensity, sharpness)` and
+    `hold(time, duration, intensity, sharpness)` chaining. Bridges cleanly to Kotlin.
+- **README "Using outside Unity" section** with concrete native iOS (Obj-C / Swift)
+  and native Android (Java / Kotlin) examples for both the direct ABI and the
+  fluent builders, plus runtime pattern construction reference.
+
+### Changed
+- **Preset names renamed to neutral / sensory terms** so the package reads idiomatically
+  in any context (games, business apps, productivity tools). Old names removed
+  (no `[Obsolete]` aliases — nothing live).
+
+  | New (v1.5) | Old (v1.4) |
+  |---|---|
+  | `Click` | `GunshotPistol` |
+  | `Snap` | `GunshotRifle` |
+  | `Boom` | `GunshotShotgun` |
+  | `BoomDeep` | `GunshotSniper` |
+  | `Burst` | `ExplosionSmall` |
+  | `BurstHeavy` | `ExplosionMedium` |
+  | `BurstHuge` | `ExplosionLarge` |
+  | `Rumble` | `ExplosionDistant` |
+  | `Thud` | `ImpactHeavy` |
+  | `ThudSharp` | `CriticalHit` |
+  | `TripleTap` | `DamageTaken` |
+  | `DoubleTap` | `Reload` |
+  | `Heartbeat` | (unchanged) |
+
+- README "Game-grade presets" section retitled "Presets" with the new feel-based
+  description column.
+- Sample button labels updated to the new preset names.
+
+### Removed
+- Old game-centric preset names (`GunshotPistol`, `ExplosionLarge`, etc.) and their
+  underlying private fields. Migration: textual rename per the table above.
+
 ## [1.4.0] - 2026-04-29
 
 ### Added

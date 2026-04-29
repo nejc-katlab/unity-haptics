@@ -1,6 +1,6 @@
 {
   "name": "dev.katlab.haptics",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "displayName": "katlab Haptics",
   "description": "Cross-platform haptics package for iOS and Android with simple presets, rich Core Haptics patterns (intensity + sharpness, transient + continuous), ScriptableObject pattern assets, and built-in throttling.",
   "unity": "6000.0",

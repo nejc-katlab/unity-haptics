@@ -5,6 +5,16 @@
 
 extern "C" {
 
+/// Single haptic event in a pattern. Pass an array of these to ``_Haptics_PlayEvents``.
+/// All times and durations are seconds; intensity/sharpness are 0..1; type is 0=transient, 1=continuous.
+typedef struct {
+    float time;
+    float duration;
+    float intensity;
+    float sharpness;
+    int   type;
+} KatlabHapticEvent;
+
 // Logging — mirrors Katlab.Haptics.HapticsLogLevel: None=0, Error=1, Warning=2 (default), Info=3, Debug=4.
 // Set from C# via _Haptics_SetLogLevel; output goes to NSLog (Xcode Console / Console.app), not Unity's Console.
 static int s_logLevel = 2;
@@ -213,17 +223,12 @@ void _Haptics_PlayPattern(const long* timings, int timingCount, const int* ampli
 #endif
 }
 
-void _Haptics_PlayEvents(const float* times,
-                         const float* durations,
-                         const float* intensities,
-                         const float* sharpnesses,
-                         const int* types,
-                         int count) {
+void _Haptics_PlayEvents(const KatlabHapticEvent* events_in, int count) {
 #if TARGET_OS_SIMULATOR
     return;
 #else
     if (@available(iOS 13.0, *)) {
-        if (!times || !intensities || !sharpnesses || !types || count < 1) {
+        if (!events_in || count < 1) {
             KATLAB_LOG_WARNING(@"PlayEvents: invalid arguments, ignoring");
             return;
         }
@@ -234,19 +239,20 @@ void _Haptics_PlayEvents(const float* times,
 
         NSMutableArray<CHHapticEvent*>* events = [NSMutableArray arrayWithCapacity:count];
         for (int i = 0; i < count; i++) {
-            float intensity = intensities[i];
+            KatlabHapticEvent ev_in = events_in[i];
+            float intensity = ev_in.intensity;
             if (intensity < 0.0f) intensity = 0.0f;
             if (intensity > 1.0f) intensity = 1.0f;
-            float sharpness = sharpnesses[i];
+            float sharpness = ev_in.sharpness;
             if (sharpness < 0.0f) sharpness = 0.0f;
             if (sharpness > 1.0f) sharpness = 1.0f;
 
             CHHapticEventParameter* intensityParam = [CHHapticEventParameter parameterWithParameterID:CHHapticEventParameterIDHapticIntensity value:intensity];
             CHHapticEventParameter* sharpnessParam = [CHHapticEventParameter parameterWithParameterID:CHHapticEventParameterIDHapticSharpness value:sharpness];
 
-            CHHapticEventType eventType = (types[i] == 1) ? CHHapticEventTypeHapticContinuous : CHHapticEventTypeHapticTransient;
-            double relTime = (double)times[i];
-            double duration = (durations && eventType == CHHapticEventTypeHapticContinuous) ? (double)durations[i] : 0.0;
+            CHHapticEventType eventType = (ev_in.type == 1) ? CHHapticEventTypeHapticContinuous : CHHapticEventTypeHapticTransient;
+            double relTime = (double)ev_in.time;
+            double duration = (eventType == CHHapticEventTypeHapticContinuous) ? (double)ev_in.duration : 0.0;
 
             CHHapticEvent* ev;
             if (eventType == CHHapticEventTypeHapticContinuous) {

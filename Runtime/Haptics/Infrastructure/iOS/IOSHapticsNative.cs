@@ -2,6 +2,21 @@ using System.Runtime.InteropServices;
 
 namespace Katlab.Haptics.Infrastructure.iOS
 {
+    /// <summary>
+    /// Mirrors the C struct <c>KatlabHapticEvent</c> defined in <c>HapticsBridge.mm</c>. Sequential
+    /// layout so we can pin a managed array and pass its address straight to the native side
+    /// without per-field marshalling.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct NativeHapticEvent
+    {
+        public float time;
+        public float duration;
+        public float intensity;
+        public float sharpness;
+        public int type;     // 0 = transient, 1 = continuous
+    }
+
     internal static class IOSHapticsNative
     {
 #if UNITY_IOS && !UNITY_EDITOR
@@ -23,13 +38,7 @@ namespace Katlab.Haptics.Infrastructure.iOS
         public static extern void PlayPattern(System.IntPtr timings, int timingCount, System.IntPtr amplitudes, int amplitudeCount);
 
         [DllImport(LibraryName, EntryPoint = "_Haptics_PlayEvents")]
-        public static extern void PlayEvents(
-            System.IntPtr times,
-            System.IntPtr durations,
-            System.IntPtr intensities,
-            System.IntPtr sharpnesses,
-            System.IntPtr types,
-            int count);
+        public static extern void PlayEvents(System.IntPtr events, int count);
 
         [DllImport(LibraryName, EntryPoint = "_Haptics_SetLogLevel")]
         public static extern void SetLogLevel(int level);

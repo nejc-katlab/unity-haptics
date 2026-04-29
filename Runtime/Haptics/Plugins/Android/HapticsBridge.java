@@ -5,11 +5,21 @@ import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
-import com.unity3d.player.UnityPlayer;
 
+/**
+ * Engine-agnostic Android haptics bridge.
+ *
+ * <p>Call {@link #init(Context)} once during app startup, then call any of the static helpers.
+ * If init was never called, methods log an error and silently no-op rather than crashing.
+ *
+ * <p>This file has no Unity dependency. To use it from a Unity build, the C# wrapper
+ * (AndroidHapticsService) calls init via JNI from {@code UnityPlayer.currentActivity};
+ * the wiring lives on the C# side.
+ */
 public class HapticsBridge {
     private static Vibrator vibrator;
     private static Context context;
+    private static boolean initWarned;
 
     private static final long[] NOTIFICATION_SUCCESS_PATTERN = new long[]{0, 30};
     private static final long[] NOTIFICATION_WARNING_ERROR_PATTERN = new long[]{0, 50, 50, 50};
@@ -18,7 +28,7 @@ public class HapticsBridge {
     private static VibrationEffect[] notificationEffects;
 
     // Logging — mirrors Katlab.Haptics.HapticsLogLevel: 0=None, 1=Error, 2=Warning (default), 3=Info, 4=Debug.
-    // Set from C# via setLogLevel; output goes to logcat under tag "katlab.Haptics", not Unity's Console.
+    // Output goes to logcat under tag "katlab.Haptics".
     private static final String TAG = "katlab.Haptics";
     private static int sLogLevel = 2;
 
@@ -32,14 +42,19 @@ public class HapticsBridge {
     private static void logI(String m) { if (sLogLevel >= 3) android.util.Log.i(TAG, m); }
     private static void logD(String m) { if (sLogLevel >= 4) android.util.Log.d(TAG, m); }
 
-    private static void ensureInit() {
+    /**
+     * Idempotent init. Must be called once before any other method.
+     *
+     * <p>Pass any {@link Context} (Activity, Application, Service); the bridge holds onto the
+     * application context internally so it survives Activity lifecycle.
+     */
+    public static void init(Context ctx) {
         if (context != null) return;
-        try {
-            context = UnityPlayer.currentActivity.getApplicationContext();
-        } catch (Exception e) {
-            logE("ensureInit: UnityPlayer.currentActivity unavailable: " + e.getMessage());
+        if (ctx == null) {
+            logE("init: context is null");
             return;
         }
+        context = ctx.getApplicationContext();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             VibratorManager vm = (VibratorManager) context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
             vibrator = vm != null ? vm.getDefaultVibrator() : null;
@@ -51,6 +66,16 @@ public class HapticsBridge {
         } else {
             logI("Vibrator initialised (API " + Build.VERSION.SDK_INT + ")");
         }
+    }
+
+    private static boolean ensureInit() {
+        if (context != null) return true;
+        if (!initWarned) {
+            initWarned = true;
+            logE("HapticsBridge.init(Context) was never called — haptic calls will silently no-op. " +
+                 "Call HapticsBridge.init(applicationContext) during app startup.");
+        }
+        return false;
     }
 
     private static void ensurePredefinedEffects() {
@@ -71,19 +96,8 @@ public class HapticsBridge {
         logD("predefined effect cache built");
     }
 
-    public static void init(Context ctx) {
-        if (context != null) return;
-        context = ctx.getApplicationContext();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            VibratorManager vm = (VibratorManager) context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
-            vibrator = vm != null ? vm.getDefaultVibrator() : null;
-        } else {
-            vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-        }
-    }
-
     public static boolean isSupported() {
-        ensureInit();
+        if (!ensureInit()) return false;
         return vibrator != null && vibrator.hasVibrator();
     }
 
@@ -99,7 +113,7 @@ public class HapticsBridge {
      * None   = No vibrator hardware at all.
      */
     public static int getCapability() {
-        ensureInit();
+        if (!ensureInit()) return 0;
         if (vibrator == null || !vibrator.hasVibrator()) {
             logI("capability: None (no vibrator)");
             return 0;
@@ -127,7 +141,7 @@ public class HapticsBridge {
     }
 
     public static void impact(int style) {
-        ensureInit();
+        if (!ensureInit()) return;
         if (vibrator == null) {
             logW("impact: vibrator unavailable");
             return;
@@ -146,7 +160,7 @@ public class HapticsBridge {
     }
 
     public static void notification(int type) {
-        ensureInit();
+        if (!ensureInit()) return;
         if (vibrator == null) {
             logW("notification: vibrator unavailable");
             return;
@@ -166,7 +180,7 @@ public class HapticsBridge {
     }
 
     public static void vibrate(long milliseconds) {
-        ensureInit();
+        if (!ensureInit()) return;
         if (vibrator == null) {
             logW("vibrate: vibrator unavailable");
             return;
@@ -180,7 +194,7 @@ public class HapticsBridge {
     }
 
     public static void vibratePattern(long[] timings, int[] amplitudes) {
-        ensureInit();
+        if (!ensureInit()) return;
         if (vibrator == null) {
             logW("vibratePattern: vibrator unavailable");
             return;

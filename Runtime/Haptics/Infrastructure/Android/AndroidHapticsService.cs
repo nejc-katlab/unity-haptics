@@ -8,14 +8,44 @@ namespace Katlab.Haptics.Infrastructure.Android
     public sealed class AndroidHapticsService : HapticsService
     {
         private static readonly AndroidJavaClass BridgeClass = new AndroidJavaClass("dev.katlab.haptics.HapticsBridge");
+        private static bool _initialized;
         private static bool? _isSupported;
         private static bool _unsupportedWarned;
         private static HapticCapability? _capability;
+
+        // The Java bridge is engine-agnostic and requires init(Context) before any other call.
+        // Unity is the one consumer that must do that wiring; we fetch the activity via JNI and
+        // hand it over once. Idempotent and cheap after the first call.
+        private static void EnsureInit()
+        {
+            if (_initialized) return;
+            _initialized = true;
+            try
+            {
+                using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                {
+                    AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+                    if (activity != null)
+                    {
+                        BridgeClass.CallStatic("init", activity);
+                    }
+                    else
+                    {
+                        HapticsLog.Error("AndroidHapticsService: UnityPlayer.currentActivity returned null — bridge will no-op");
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                HapticsLog.Error($"AndroidHapticsService init failed: {e.Message}");
+            }
+        }
 
         public override HapticCapability Capability
         {
             get
             {
+                EnsureInit();
                 if (!_capability.HasValue)
                 {
                     int raw = BridgeClass.CallStatic<int>("getCapability");
@@ -30,6 +60,7 @@ namespace Katlab.Haptics.Infrastructure.Android
         {
             get
             {
+                EnsureInit();
                 if (!_isSupported.HasValue)
                 {
                     _isSupported = BridgeClass.CallStatic<bool>("isSupported");
@@ -45,6 +76,7 @@ namespace Katlab.Haptics.Infrastructure.Android
 
         public override void SetLogLevel(HapticsLogLevel level)
         {
+            EnsureInit();
             BridgeClass.CallStatic("setLogLevel", (int)level);
         }
 

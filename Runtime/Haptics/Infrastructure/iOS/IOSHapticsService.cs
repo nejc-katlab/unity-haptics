@@ -115,37 +115,23 @@ namespace Katlab.Haptics.Infrastructure.iOS
             if (HapticsLog.IsEnabled(HapticsLogLevel.Debug))
                 HapticsLog.Debug($"native PlayEvents(count={count})");
 
-            // Unpack the struct array into parallel primitive arrays so we can pin them for the native call.
-            float[] times = new float[count];
-            float[] durations = new float[count];
-            float[] intensities = new float[count];
-            float[] sharpnesses = new float[count];
-            int[] types = new int[count];
+            // Build a single sequential-layout struct array; pin it once and pass its address to native.
+            NativeHapticEvent[] buf = new NativeHapticEvent[count];
             for (int i = 0; i < count; i++)
             {
                 HapticEvent e = events[i];
-                times[i] = e.Time;
-                durations[i] = e.Duration;
-                intensities[i] = e.Intensity;
-                sharpnesses[i] = e.Sharpness;
-                types[i] = (int)e.Type;
+                buf[i].time = e.Time;
+                buf[i].duration = e.Duration;
+                buf[i].intensity = e.Intensity;
+                buf[i].sharpness = e.Sharpness;
+                buf[i].type = (int)e.Type;
             }
 
             unsafe
             {
-                fixed (float* tPtr = times)
-                fixed (float* dPtr = durations)
-                fixed (float* iPtr = intensities)
-                fixed (float* sPtr = sharpnesses)
-                fixed (int* tyPtr = types)
+                fixed (NativeHapticEvent* ptr = buf)
                 {
-                    IOSHapticsNative.PlayEvents(
-                        (System.IntPtr)tPtr,
-                        (System.IntPtr)dPtr,
-                        (System.IntPtr)iPtr,
-                        (System.IntPtr)sPtr,
-                        (System.IntPtr)tyPtr,
-                        count);
+                    IOSHapticsNative.PlayEvents((System.IntPtr)ptr, count);
                 }
             }
         }
