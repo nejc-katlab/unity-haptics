@@ -105,8 +105,8 @@ int _Haptics_GetCapability(void) {
     return 0; // None
 #else
     if (@available(iOS 13.0, *)) {
-        if ([CHHapticEngine supportsHardware]) {
-            KATLAB_LOG_INFO(@"capability: Rich (Core Haptics + supportsHardware)");
+        if ([CHHapticEngine capabilitiesForHardware].supportsHaptics) {
+            KATLAB_LOG_INFO(@"capability: Rich (Core Haptics + supportsHaptics)");
             return 3; // Rich
         }
     }
@@ -116,12 +116,14 @@ int _Haptics_GetCapability(void) {
 #endif
 }
 
+static BOOL s_engineRunning = NO;
+
 API_AVAILABLE(ios(13.0))
 static CHHapticEngine* _Haptics_GetEngine(void) {
     static CHHapticEngine* s_engine = nil;
     static dispatch_once_t s_once;
     dispatch_once(&s_once, ^{
-        if (![CHHapticEngine supportsHardware]) {
+        if (![CHHapticEngine capabilitiesForHardware].supportsHaptics) {
             KATLAB_LOG_ERROR(@"CHHapticEngine: hardware does not support Core Haptics");
             return;
         }
@@ -138,13 +140,17 @@ static CHHapticEngine* _Haptics_GetEngine(void) {
         // The stoppedHandler clears the running flag; the next play call will lazily restart.
         s_engine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {
             KATLAB_LOG_WARNING(@"CHHapticEngine stopped (reason=%ld) — will restart on next play", (long)reason);
+            s_engineRunning = NO;
         };
         s_engine.resetHandler = ^{
             KATLAB_LOG_INFO(@"CHHapticEngine reset — restarting");
+            s_engineRunning = NO;
             NSError* startError = nil;
             [s_engine startAndReturnError:&startError];
             if (startError) {
                 KATLAB_LOG_ERROR(@"CHHapticEngine restart after reset failed: %@", startError.localizedDescription ?: @"(no description)");
+            } else {
+                s_engineRunning = YES;
             }
         };
     });
@@ -154,12 +160,14 @@ static CHHapticEngine* _Haptics_GetEngine(void) {
 API_AVAILABLE(ios(13.0))
 static BOOL _Haptics_EnsureEngineRunning(CHHapticEngine* engine) {
     if (!engine) return NO;
+    if (s_engineRunning) return YES;
     NSError* error = nil;
     [engine startAndReturnError:&error];
     if (error) {
         KATLAB_LOG_ERROR(@"CHHapticEngine start failed: %@", error.localizedDescription ?: @"(no description)");
         return NO;
     }
+    s_engineRunning = YES;
     return YES;
 }
 
@@ -189,9 +197,9 @@ void _Haptics_PlayPattern(const long* timings, int timingCount, const int* ampli
                     intensity = (float)amplitudes[i] / 255.0f;
                     if (intensity > 1.0f) intensity = 1.0f;
                 }
-                CHHapticEventParameter* intensityParam = [CHHapticEventParameter parameterWithParameterID:CHHapticEventParameterIDHapticIntensity value:intensity];
-                CHHapticEventParameter* sharpnessParam = [CHHapticEventParameter parameterWithParameterID:CHHapticEventParameterIDHapticSharpness value:0.5f];
-                CHHapticEvent* event = [CHHapticEvent eventWithEventType:CHHapticEventTypeHapticTransient parameters:@[intensityParam, sharpnessParam] relativeTime:time / 1000.0];
+                CHHapticEventParameter* intensityParam = [[CHHapticEventParameter alloc] initWithParameterID:CHHapticEventParameterIDHapticIntensity value:intensity];
+                CHHapticEventParameter* sharpnessParam = [[CHHapticEventParameter alloc] initWithParameterID:CHHapticEventParameterIDHapticSharpness value:0.5f];
+                CHHapticEvent* event = [[CHHapticEvent alloc] initWithEventType:CHHapticEventTypeHapticTransient parameters:@[intensityParam, sharpnessParam] relativeTime:time / 1000.0];
                 [events addObject:event];
             }
             time += t;
@@ -208,7 +216,7 @@ void _Haptics_PlayPattern(const long* timings, int timingCount, const int* ampli
             return;
         }
 
-        if (!engine.running && !_Haptics_EnsureEngineRunning(engine)) return;
+        if (!_Haptics_EnsureEngineRunning(engine)) return;
 
         id<CHHapticPatternPlayer> player = [engine createPlayerWithPattern:pattern error:&error];
         if (error || !player) {
@@ -247,8 +255,8 @@ void _Haptics_PlayEvents(const KatlabHapticEvent* events_in, int count) {
             if (sharpness < 0.0f) sharpness = 0.0f;
             if (sharpness > 1.0f) sharpness = 1.0f;
 
-            CHHapticEventParameter* intensityParam = [CHHapticEventParameter parameterWithParameterID:CHHapticEventParameterIDHapticIntensity value:intensity];
-            CHHapticEventParameter* sharpnessParam = [CHHapticEventParameter parameterWithParameterID:CHHapticEventParameterIDHapticSharpness value:sharpness];
+            CHHapticEventParameter* intensityParam = [[CHHapticEventParameter alloc] initWithParameterID:CHHapticEventParameterIDHapticIntensity value:intensity];
+            CHHapticEventParameter* sharpnessParam = [[CHHapticEventParameter alloc] initWithParameterID:CHHapticEventParameterIDHapticSharpness value:sharpness];
 
             CHHapticEventType eventType = (ev_in.type == 1) ? CHHapticEventTypeHapticContinuous : CHHapticEventTypeHapticTransient;
             double relTime = (double)ev_in.time;
@@ -283,7 +291,7 @@ void _Haptics_PlayEvents(const KatlabHapticEvent* events_in, int count) {
             return;
         }
 
-        if (!engine.running && !_Haptics_EnsureEngineRunning(engine)) return;
+        if (!_Haptics_EnsureEngineRunning(engine)) return;
 
         id<CHHapticPatternPlayer> player = [engine createPlayerWithPattern:pattern error:&error];
         if (error || !player) {

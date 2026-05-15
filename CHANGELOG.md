@@ -4,6 +4,20 @@ All notable changes to this package are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-05-15
+
+### Fixed
+- **Xcode 26 / iOS 26.4 SDK compatibility.** `Runtime/Haptics/Plugins/iOS/HapticsBridge.mm`
+  used four CoreHaptics APIs that aren't declared in the iOS 26.4 SDK public headers,
+  producing 9 build errors against Xcode 26:
+  - `+[CHHapticEngine supportsHardware]` → `+[CHHapticEngine capabilitiesForHardware].supportsHaptics`.
+  - `+[CHHapticEventParameter parameterWithParameterID:value:]` → `-[CHHapticEventParameter initWithParameterID:value:]`.
+  - `+[CHHapticEvent eventWithEventType:parameters:relativeTime:]` → `-[CHHapticEvent initWithEventType:parameters:relativeTime:]`.
+  - `CHHapticEngine.running` (never a public property) → file-scope `s_engineRunning` flag
+    maintained by `stoppedHandler` / `resetHandler` / `_Haptics_EnsureEngineRunning`.
+
+  No behaviour change; pure build-compat fix. The package still targets iOS 13.0+.
+
 ## [1.5.0] - 2026-04-29
 
 ### Added
