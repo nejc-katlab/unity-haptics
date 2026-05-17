@@ -4,6 +4,31 @@ All notable changes to this package are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2026-05-18
+
+### Fixed
+- **Tablet-ERM perceptibility on Android (Galaxy Tab and similar).** QA reported that
+  `HapticImpactStyle.Light`, `HapticPreset.TripleTap`, and `HapticPreset.DoubleTap` were
+  inaudible on Galaxy Tab devices. Root causes and fixes:
+  - **Light impact** mapped to `VibrationEffect.EFFECT_TICK` on all API 29+ devices.
+    Predefined effects are only tuned by the OEM HAL on Rich-tier hardware (devices that
+    expose Composition primitives). On Basic/Minimal motors — especially tablet ERMs —
+    `EFFECT_TICK` renders so subtly it's effectively silent. `HapticsBridge.impact()` now
+    gates predefined effects on `getCapability() >= Rich` and falls back to explicit
+    `createOneShot` waveforms (Light = 30 ms @ amp 130, Medium = 40 ms @ 200,
+    Heavy = 60 ms @ 255, Rigid = 50 ms @ 255, Soft = 35 ms @ 110) so every impact style
+    is perceptible on weaker motors. `getCapability()` is now cached on the Java side.
+  - **`TripleTap_Basic`** used 30 ms pulses with amplitudes tapering to 80/255. Tablet
+    ERMs have ~25–40 ms startup latency, so the second and third taps were below the
+    perception threshold. Pulses bumped to 50 ms; trailing amplitudes raised to 200 and
+    150 so all three taps are felt.
+  - **`DoubleTap_Basic`** started with a 30 ms @ 180 pulse — too short to spin the motor
+    up before the pulse ended. First pulse now 50 ms @ 220; second pulse 60 ms @ 255.
+  - **`TripleTap_Minimal` and `DoubleTap_Minimal`** pulses lengthened from 40 ms to
+    60 ms for the same reason on motors without amplitude control.
+
+  No public API changes. Rich-tier devices (iPhone, Pixel 6+, Galaxy S22+) are unaffected.
+
 ## [1.5.1] - 2026-05-15
 
 ### Fixed

@@ -26,6 +26,7 @@ public class HapticsBridge {
 
     private static VibrationEffect[] impactEffects;
     private static VibrationEffect[] notificationEffects;
+    private static int cachedCapability = -1;
 
     // Logging — mirrors Katlab.Haptics.HapticsLogLevel: 0=None, 1=Error, 2=Warning (default), 3=Info, 4=Debug.
     // Output goes to logcat under tag "katlab.Haptics".
@@ -113,9 +114,11 @@ public class HapticsBridge {
      * None   = No vibrator hardware at all.
      */
     public static int getCapability() {
+        if (cachedCapability >= 0) return cachedCapability;
         if (!ensureInit()) return 0;
         if (vibrator == null || !vibrator.hasVibrator()) {
             logI("capability: None (no vibrator)");
+            cachedCapability = 0;
             return 0;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -126,6 +129,7 @@ public class HapticsBridge {
                 };
                 if (vibrator.areAllPrimitivesSupported(required)) {
                     logI("capability: Rich (Composition primitives supported, API " + Build.VERSION.SDK_INT + ")");
+                    cachedCapability = 3;
                     return 3;
                 }
             } catch (Throwable t) {
@@ -134,9 +138,11 @@ public class HapticsBridge {
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator.hasAmplitudeControl()) {
             logI("capability: Basic (amplitude control, API " + Build.VERSION.SDK_INT + ")");
+            cachedCapability = 2;
             return 2;
         }
         logI("capability: Minimal (no amplitude control or API " + Build.VERSION.SDK_INT + ")");
+        cachedCapability = 1;
         return 1;
     }
 
@@ -147,15 +153,38 @@ public class HapticsBridge {
             return;
         }
         logD("impact(style=" + style + ") API=" + Build.VERSION.SDK_INT);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+
+        // Predefined effects (EFFECT_TICK / EFFECT_CLICK / EFFECT_HEAVY_CLICK) are only well-tuned on
+        // Rich-tier hardware where the OEM HAL exposes Composition primitives. On Basic/Minimal motors
+        // — especially tablet ERMs (Galaxy Tab) — EFFECT_TICK in particular is rendered so subtly that
+        // it's effectively silent. Use explicit createOneShot waveforms there so Light/Medium/Heavy
+        // remain perceptible.
+        int cap = getCapability();
+        if (cap >= 3 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ensurePredefinedEffects();
             int index = (style >= 0 && style < impactEffects.length) ? style : 1;
             vibrator.vibrate(impactEffects[index]);
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            long duration = style == 2 ? 50 : 20;
-            vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE));
+            return;
+        }
+
+        // Fallback waveforms. Durations are ≥30ms so ERM motors have time to spin up; amplitudes
+        // for Basic-tier are set high enough to be felt on weak tablet motors.
+        // Style order: Light(0), Medium(1), Heavy(2), Rigid(3), Soft(4).
+        long durationMs;
+        int amplitude;
+        switch (style) {
+            case 0: durationMs = 30; amplitude = 130; break;
+            case 1: durationMs = 40; amplitude = 200; break;
+            case 2: durationMs = 60; amplitude = 255; break;
+            case 3: durationMs = 50; amplitude = 255; break;
+            case 4: durationMs = 35; amplitude = 110; break;
+            default: durationMs = 40; amplitude = 200; break;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            int amp = cap >= 2 ? amplitude : VibrationEffect.DEFAULT_AMPLITUDE;
+            vibrator.vibrate(VibrationEffect.createOneShot(durationMs, amp));
         } else {
-            vibrator.vibrate(style == 2 ? 50 : 20);
+            vibrator.vibrate(durationMs);
         }
     }
 

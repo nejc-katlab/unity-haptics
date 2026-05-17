@@ -189,13 +189,16 @@ namespace Katlab.Haptics
             new long[] { 0, 30, 5,  60,  30, 30 },
             new int[]  { 0, 255, 0, 200, 0, 130 });
 
+        // Three perceptible taps on tablet-grade ERMs: each vibrate slot ≥50ms so the motor reaches
+        // amplitude, and the trailing tap's amplitude stays well above the "barely felt" threshold.
         private static readonly HapticPattern TripleTap_Basic = HapticPattern.CreateWaveform(
-            new long[] { 0, 30, 20, 30,  20, 30 },
-            new int[]  { 0, 255, 0, 150, 0, 80 });
+            new long[] { 0, 50, 30, 50,  30, 50 },
+            new int[]  { 0, 255, 0, 200, 0, 150 });
 
+        // First tap was 30ms which is below the spin-up time of tablet ERMs; bump to 50ms@220.
         private static readonly HapticPattern DoubleTap_Basic = HapticPattern.CreateWaveform(
-            new long[] { 0, 30,  130, 40 },
-            new int[]  { 0, 180, 0,   255 });
+            new long[] { 0, 50,  120, 60 },
+            new int[]  { 0, 220, 0,   255 });
 
         private static readonly HapticPattern Heartbeat_Basic = HapticPattern.CreateWaveform(
             new long[] { 0, 80,  40, 50 },
@@ -217,8 +220,8 @@ namespace Katlab.Haptics
         private static readonly HapticPattern Rumble_Minimal= HapticPattern.CreateWaveform(new long[] { 0, 700 });
         private static readonly HapticPattern Thud_Minimal     = HapticPattern.CreateWaveform(new long[] { 0, 40, 10, 50 });
         private static readonly HapticPattern ThudSharp_Minimal     = HapticPattern.CreateWaveform(new long[] { 0, 40, 10, 60, 30, 30 });
-        private static readonly HapticPattern TripleTap_Minimal     = HapticPattern.CreateWaveform(new long[] { 0, 40, 30, 40, 30, 40 });
-        private static readonly HapticPattern DoubleTap_Minimal          = HapticPattern.CreateWaveform(new long[] { 0, 40, 130, 40 });
+        private static readonly HapticPattern TripleTap_Minimal     = HapticPattern.CreateWaveform(new long[] { 0, 60, 40, 60, 40, 60 });
+        private static readonly HapticPattern DoubleTap_Minimal          = HapticPattern.CreateWaveform(new long[] { 0, 60, 120, 60 });
         private static readonly HapticPattern Heartbeat_Minimal       = HapticPattern.CreateWaveform(new long[] { 0, 80, 40, 50 });
 
         // ─────────────────────────────────────────────────────────────────────
