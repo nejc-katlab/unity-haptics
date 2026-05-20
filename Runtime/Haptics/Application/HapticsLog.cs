@@ -11,7 +11,12 @@ namespace Katlab.Haptics.Application
         private const string Prefix = "[katlab.Haptics] ";
         private const string DebugPrefix = "[katlab.Haptics] [debug] ";
 
-        public static HapticsLogLevel Level = HapticsLogLevel.Warning;
+        public static HapticsLogLevel Level =
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            HapticsLogLevel.Info;
+#else
+            HapticsLogLevel.None;
+#endif
 
         public static bool IsEnabled(HapticsLogLevel level) => Level >= level;
 

@@ -48,15 +48,23 @@ namespace Katlab.Haptics.Infrastructure.iOS
 
         public override void Impact(HapticImpactStyle style)
         {
-            if (!IsSupported) return;
-            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"native Impact(style={(int)style})");
+            if (!IsSupported)
+            {
+                HapticsLog.Warning($"Impact({style}) skipped — haptics unsupported (iPad, simulator, or iPhone 6s and older)");
+                return;
+            }
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Info)) HapticsLog.Info($"native Impact(style={(int)style})");
             IOSHapticsNative.Impact((int)style);
         }
 
         public override void Notification(HapticNotificationType type)
         {
-            if (!IsSupported) return;
-            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"native Notification(type={(int)type})");
+            if (!IsSupported)
+            {
+                HapticsLog.Warning($"Notification({type}) skipped — haptics unsupported on this device");
+                return;
+            }
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Info)) HapticsLog.Info($"native Notification(type={(int)type})");
             IOSHapticsNative.Notification((int)type);
         }
 
@@ -81,8 +89,8 @@ namespace Katlab.Haptics.Infrastructure.iOS
                 return;
             }
 
-            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug))
-                HapticsLog.Debug($"native PlayPattern(timings={pattern.Timings.Length}, amplitudes={(pattern.Amplitudes?.Length ?? 0)})");
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Info))
+                HapticsLog.Info($"native PlayPattern(timings={pattern.Timings.Length}, amplitudes={(pattern.Amplitudes?.Length ?? 0)})");
 
             unsafe
             {
@@ -112,8 +120,8 @@ namespace Katlab.Haptics.Infrastructure.iOS
             int count = events.Length;
             if (count == 0) return;
 
-            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug))
-                HapticsLog.Debug($"native PlayEvents(count={count})");
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Info))
+                HapticsLog.Info($"native PlayEvents(count={count})");
 
             // Build a single sequential-layout struct array; pin it once and pass its address to native.
             NativeHapticEvent[] buf = new NativeHapticEvent[count];

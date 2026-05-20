@@ -68,10 +68,10 @@ static UINotificationFeedbackGenerator* getNotificationGenerator(void) {
 void _Haptics_Impact(int style) {
 #if TARGET_OS_SIMULATOR
     static BOOL warned = NO;
-    if (!warned) { warned = YES; KATLAB_LOG_DEBUG(@"simulator: skipping Impact"); }
+    if (!warned) { warned = YES; KATLAB_LOG_WARNING(@"simulator: Impact requested but haptics are silent in the iOS simulator"); }
     return;
 #else
-    KATLAB_LOG_DEBUG(@"Impact(style=%d)", style);
+    KATLAB_LOG_INFO(@"Impact(style=%d)", style);
     UIImpactFeedbackGenerator* generator = getImpactGenerator(style);
     [generator prepare];
     [generator impactOccurred];
@@ -81,10 +81,10 @@ void _Haptics_Impact(int style) {
 void _Haptics_Notification(int type) {
 #if TARGET_OS_SIMULATOR
     static BOOL warned = NO;
-    if (!warned) { warned = YES; KATLAB_LOG_DEBUG(@"simulator: skipping Notification"); }
+    if (!warned) { warned = YES; KATLAB_LOG_WARNING(@"simulator: Notification requested but haptics are silent in the iOS simulator"); }
     return;
 #else
-    KATLAB_LOG_DEBUG(@"Notification(type=%d)", type);
+    KATLAB_LOG_INFO(@"Notification(type=%d)", type);
     UINotificationFeedbackGenerator* generator = getNotificationGenerator();
     [generator prepare];
     [generator notificationOccurred:(UINotificationFeedbackType)type];
@@ -180,7 +180,7 @@ void _Haptics_PlayPattern(const long* timings, int timingCount, const int* ampli
             KATLAB_LOG_WARNING(@"PlayPattern: empty timings, ignoring");
             return;
         }
-        KATLAB_LOG_DEBUG(@"PlayPattern: timingCount=%d amplitudeCount=%d", timingCount, amplitudeCount);
+        KATLAB_LOG_INFO(@"PlayPattern: timingCount=%d amplitudeCount=%d", timingCount, amplitudeCount);
 
         CHHapticEngine* engine = _Haptics_GetEngine();
         if (!engine) return;
@@ -240,7 +240,7 @@ void _Haptics_PlayEvents(const KatlabHapticEvent* events_in, int count) {
             KATLAB_LOG_WARNING(@"PlayEvents: invalid arguments, ignoring");
             return;
         }
-        KATLAB_LOG_DEBUG(@"PlayEvents: count=%d", count);
+        KATLAB_LOG_INFO(@"PlayEvents: count=%d", count);
 
         CHHapticEngine* engine = _Haptics_GetEngine();
         if (!engine) return;

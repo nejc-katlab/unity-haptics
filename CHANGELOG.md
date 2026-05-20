@@ -4,6 +4,63 @@ All notable changes to this package are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-05-20
+
+### Changed
+- **Android `Impact` Rich-tier path now uses `VibrationEffect.Composition` primitives
+  with explicit scale** (carried over from in-progress 1.5.3 work). Predefined effects like
+  `EFFECT_TICK` are tuned imperceptibly by some flagship HALs (e.g. POCO F8 Ultra on
+  HyperOS 2's X-axis LRA — the OEM renders `EFFECT_TICK` exactly to spec, which is below the
+  perception threshold on that motor). Compositions take an explicit scale the HAL must
+  honour, so Light/Medium/Heavy stay felt across Pixel / Samsung / Xiaomi / OnePlus:
+  - **Light** → `PRIMITIVE_LOW_TICK` @ 1.0 (API 31+ where supported), else `PRIMITIVE_TICK` @ 1.0.
+  - **Medium** → `PRIMITIVE_CLICK` @ 0.7.
+  - **Heavy** → `PRIMITIVE_CLICK` @ 1.0.
+  - **Rigid** → `PRIMITIVE_CLICK` @ 1.0 + `PRIMITIVE_TICK` @ 0.4 with 20 ms delay (now
+    distinct from Heavy; previously both mapped to `EFFECT_HEAVY_CLICK`).
+  - **Soft** → `PRIMITIVE_LOW_TICK` @ 0.6 / `PRIMITIVE_TICK` @ 0.3 (now distinct from Light;
+    previously both mapped to `EFFECT_TICK`).
+  The selected Light primitive is probed once and cached.
+
+- **Android `Impact` now prefers `View.performHapticFeedback` over the raw `Vibrator` path.**
+  Google explicitly documents `performHapticFeedback` as the preferred API for UI haptics: it
+  is OEM-tuned (the same waveform the system UI uses for taps and long-presses), it respects
+  the user's "Touch feedback" / haptic-intensity system setting, and on flagship devices it
+  routes through `VibrationEffect.Composition` primitives internally. The previous "Rich tier
+  Composition / Basic createOneShot / Minimal vibrate" ladder remains as the fallback when no
+  Activity is available or the call returns `false`. Style → constant mapping:
+  - **Light** → `HapticFeedbackConstants.CONTEXT_CLICK` (API 23+)
+  - **Medium** → `CONFIRM` (API 30+), else `LONG_PRESS`
+  - **Heavy** → `LONG_PRESS` (universal)
+  - **Rigid** → `REJECT` (API 30+), else `LONG_PRESS`
+  - **Soft** → `CLOCK_TICK` (API 21+), else `KEYBOARD_TAP`
+
+  The Java bridge now caches the Activity passed to `init` and dispatches the call to the UI
+  thread via `runOnUiThread`. If no Activity is available (e.g. the C# wrapper passed an
+  `ApplicationContext`), this path is silently skipped and the Vibrator fallback ladder is
+  used as before.
+
+- **Android ERM fallback waveforms widened to sit above the motor's spin-up floor.** The
+  Basic/Minimal fallback path (used when both `performHapticFeedback` and Composition are
+  unavailable) now uses:
+  - Light: 40 ms @ 180 (was 30 ms @ 130)
+  - Medium: 55 ms @ 220 (was 40 ms @ 200)
+  - Heavy: 70 ms @ 255 (was 60 ms @ 255)
+  - Rigid: 60 ms @ 255 (was 50 ms @ 255)
+  - Soft: 45 ms @ 140 (was 35 ms @ 110)
+  Galaxy A-series, mid-range Redmi/POCO, Moto G, and similar ERM-motor devices were below
+  the perception threshold on the previous values.
+
+- **Default log level depends on build type.** `HapticsLog.Level` now defaults to:
+  - `Info` in `DEVELOPMENT_BUILD` or in the Unity Editor
+  - `None` in release builds (was `Warning`)
+  Every fire attempt (Impact, Notification, Vibrate, PlayPattern, PlayPreset) is now logged
+  at `Info` level on both the managed and native sides, including which fallback tier was
+  taken on Android. Failures (no vibrator, `performHapticFeedback` returned false, unsupported
+  device) are logged at `Warning`. Release builds remain completely silent unless the consumer
+  explicitly calls `Haptics.SetLogLevel(...)`. The factory now propagates the initial level to
+  the native bridges at first use so dev builds get native-side logs automatically.
+
 ## [1.5.2] - 2026-05-18
 
 ### Fixed

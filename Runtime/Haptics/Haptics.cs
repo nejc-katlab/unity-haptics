@@ -80,7 +80,7 @@ namespace Katlab.Haptics
         /// </summary>
         public static void Impact(HapticImpactStyle style)
         {
-            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"Impact({style})");
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Info)) HapticsLog.Info($"Impact({style})");
             if (!HapticsThrottle.ShouldFire(ThrottleKey.Impact, (int)style)) return;
             HapticsServiceFactory.Get().Impact(style);
         }
@@ -91,7 +91,7 @@ namespace Katlab.Haptics
         /// </summary>
         public static void Notification(HapticNotificationType type)
         {
-            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"Notification({type})");
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Info)) HapticsLog.Info($"Notification({type})");
             if (!HapticsThrottle.ShouldFire(ThrottleKey.Notification, (int)type)) return;
             HapticsServiceFactory.Get().Notification(type);
         }
@@ -102,7 +102,7 @@ namespace Katlab.Haptics
         /// </summary>
         public static void Vibrate(long milliseconds)
         {
-            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug($"Vibrate({milliseconds}ms)");
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Info)) HapticsLog.Info($"Vibrate({milliseconds}ms)");
             if (!HapticsThrottle.ShouldFire(ThrottleKey.Vibrate, 0)) return;
             HapticsServiceFactory.Get().Vibrate(milliseconds);
         }
@@ -115,7 +115,7 @@ namespace Katlab.Haptics
         /// </summary>
         public static void PlayPattern(HapticPattern pattern)
         {
-            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug)) HapticsLog.Debug(DescribePattern(pattern));
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Info)) HapticsLog.Info(DescribePattern(pattern));
             if (!HapticsThrottle.ShouldFire(ThrottleKey.PlayPattern, 0)) return;
             HapticsServiceFactory.Get().PlayPattern(pattern);
         }
@@ -128,8 +128,8 @@ namespace Katlab.Haptics
         /// </summary>
         public static void PlayPreset(HapticPreset preset)
         {
-            if (HapticsLog.IsEnabled(HapticsLogLevel.Debug))
-                HapticsLog.Debug($"PlayPreset({preset}) on capability {Capability}");
+            if (HapticsLog.IsEnabled(HapticsLogLevel.Info))
+                HapticsLog.Info($"PlayPreset({preset}) on capability {Capability}");
             PlayPattern(HapticPresets.Get(preset, Capability));
         }
 
