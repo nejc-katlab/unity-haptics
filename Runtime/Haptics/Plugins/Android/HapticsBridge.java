@@ -264,11 +264,11 @@ public class HapticsBridge {
         }
         logI("impact(style=" + style + ") API=" + Build.VERSION.SDK_INT);
 
-        if (playPerformHapticFeedback(style)) {
+        int cap = getCapability();
+
+        if (cap >= 3 && playPerformHapticFeedback(style)) {
             return;
         }
-
-        int cap = getCapability();
 
         if (cap >= 3 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (playComposition(style)) {

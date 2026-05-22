@@ -4,6 +4,28 @@ All notable changes to this package are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-05-22
+
+### Fixed
+- **Galaxy A15 (and other Basic/Minimal-tier ERM devices): `Impact(Light)` was
+  imperceptible.** v1.6.0 made `View.performHapticFeedback` the primary path for
+  `Impact()` on Android. For `Light` this dispatches `HapticFeedbackConstants.CONTEXT_CLICK`,
+  which Samsung's HAL tunes as a very subtle LRA tap. On the A15's ERM motor that tuning
+  falls below the perception threshold — and because `performHapticFeedback` returns
+  `true` (the system *did* fire the haptic), the explicit `createOneShot` fallback never
+  ran. This is the same class of bug v1.5.2 fixed for predefined `EFFECT_TICK`, re-introduced
+  via the new `performHapticFeedback` path.
+
+  `HapticsBridge.impact()` now gates the `performHapticFeedback` path behind
+  `getCapability() >= Rich`. Rich-tier devices (Pixel 6+, Galaxy S22+, Tab S9+, etc.) still
+  use Google's OEM-preferred path; Basic/Minimal-tier devices fall through to the explicit
+  `createOneShot` ladder (Light = 40 ms @ 180) calibrated in v1.6.0 to sit above the ERM
+  motor's spin-up floor. Tradeoff: non-Rich devices no longer respect the user's "Touch
+  feedback" system setting through this API — but a haptic that respects the setting and
+  can't be felt is worse than one that can.
+
+  No public API changes. iOS is unaffected.
+
 ## [1.6.0] - 2026-05-20
 
 ### Changed
