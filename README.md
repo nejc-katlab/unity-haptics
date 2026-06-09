@@ -151,10 +151,10 @@ The package detects this on first call and exposes it as `Haptics.Capability`:
 
 | `HapticCapability` | What it means | Devices |
 |---|---|---|
-| `Rich` | Core Haptics (iOS 13+) **or** Android `VibrationEffect.Composition` primitives supported | iPhone 7+, Pixel 6+, Galaxy S22+, OnePlus 9+ |
-| `Basic` | Amplitude control without primitives (`hasAmplitudeControl()` true, API 26+) | Galaxy A-series, mid-range Androids, iOS 10–12 |
-| `Minimal` | Plain on/off vibrate, no amplitude | Older Androids (pre-API 26), low-end devices |
-| `None` | No haptic hardware | Simulator, non-mobile |
+| `Rich` | Core Haptics (iPhone 8+, iOS 13+) **or** Android `VibrationEffect.Composition` primitives supported | iPhone 8+, Pixel 6+, Galaxy S22+, OnePlus 9+ |
+| `Basic` | Amplitude control without primitives (`hasAmplitudeControl()` true, API 26+), or a Taptic Engine without Core Haptics | Galaxy A-series, mid-range Androids, iPhone 7 / 7 Plus |
+| `Minimal` | Plain on/off vibrate, no amplitude (falls back to the system vibrate on iOS) | Older Androids (pre-API 26), iPhone 6s / SE (1st gen) and older |
+| `None` | No haptic hardware | Simulator, iPad / iPod touch (no vibration motor), non-mobile |
 
 Detection is automatic. You can also force a tier for testing on a higher-end device:
 

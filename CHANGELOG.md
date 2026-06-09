@@ -4,6 +4,36 @@ All notable changes to this package are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-06-09
+
+### Fixed
+- **Android: API-30 devices that over-report primitive support no longer get classified
+  `Rich` and play silence.** `Vibrator.areAllPrimitivesSupported()` exists from API 30, but
+  reliable per-primitive reporting only lands at API 31 — on API 30 some motors (notably ERM)
+  return `true` for `PRIMITIVE_CLICK`/`PRIMITIVE_TICK` they can't actually render. A
+  `VibrationEffect.Composition` built for such a device is a silent no-op (unlike
+  `createPredefined`, compositions have no OS fallback). `getCapability()` now corroborates the
+  primitive query with `hasAmplitudeControl()` on API 30 — real primitive support implies an LRA
+  actuator, which always has amplitude control. Genuine API-30 LRA devices (e.g. Pixels on
+  Android 11) stay `Rich`; over-reporting ERM motors correctly drop to `Minimal` and buzz via the
+  `createPredefined` / legacy-vibrate ladder. API 31+ still trusts the query outright.
+
+- **iOS: old iPhones without a Taptic Engine were completely silent.** `UIFeedbackGenerator`
+  silently no-ops on the iPhone 6s / SE (1st gen) and older, so `Impact()` / `Notification()`
+  produced nothing on those devices even though they have a vibration motor. The bridge now
+  resolves a real device tier (Core Haptics → `Rich`; iPhone 7 / 7 Plus → `Basic`; iPhone 6s /
+  SE1 and older → `Minimal`; iPad / iPod → `None`) and falls back to
+  `AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)` on the `Minimal` tier and whenever the
+  Core Haptics engine is unavailable for pattern playback. `_Haptics_GetCapability` now reports
+  these tiers accurately instead of returning `Basic` for every non-simulator device.
+
+### Changed
+- **iOS: `CHHapticEngine.playsHapticsOnly` is now set to `true` before the engine starts.**
+  Since iOS 15, haptics can be muted under certain `AVAudioSession` configurations unless the
+  engine declares it plays haptics only. This keeps haptics firing while game audio is playing.
+
+No public API changes.
+
 ## [1.6.1] - 2026-05-22
 
 ### Fixed

@@ -19,19 +19,24 @@ namespace Katlab.Haptics
         /// <summary>No haptic hardware available (iOS Simulator, non-mobile, missing vibrator).</summary>
         None = 0,
 
-        /// <summary>Plain on/off vibrate, no amplitude control. Older Androids (pre-API 26) and basic ERM.</summary>
+        /// <summary>
+        /// Plain on/off vibrate, no amplitude control. Older Androids (pre-API 26) and basic ERM.
+        /// On iOS this is the iPhone 6s / SE (1st gen) and older — no Taptic Engine, so
+        /// <c>UIFeedbackGenerator</c> is silent and the bridge falls back to the system vibrate.
+        /// </summary>
         Minimal = 1,
 
         /// <summary>
         /// Amplitude control, no Composition primitives. Mid-range Androids (Galaxy A-series, etc.)
-        /// and iOS 10–12. ERM motors usually live here — amplitude is honoured but ramp time is slow,
-        /// so Rich patterns with sub-30 ms transients won't feel right.
+        /// and the iPhone 7 / 7 Plus (Taptic Engine but no Core Haptics). ERM motors usually live
+        /// here — amplitude is honoured but ramp time is slow, so Rich patterns with sub-30 ms
+        /// transients won't feel right.
         /// </summary>
         Basic = 2,
 
         /// <summary>
         /// Full fidelity. iOS 13+ with Core Haptics, or Android API 30+ with
-        /// <c>VibrationEffect.Composition</c> primitives supported. iPhone 7+, Pixel 6+,
+        /// <c>VibrationEffect.Composition</c> primitives supported. iPhone 8+, Pixel 6+,
         /// Galaxy S22+, OnePlus 9+, etc.
         /// </summary>
         Rich = 3

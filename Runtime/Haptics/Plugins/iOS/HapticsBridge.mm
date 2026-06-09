@@ -1,5 +1,7 @@
 #import <UIKit/UIKit.h>
+#import <sys/utsname.h>
 #import <CoreHaptics/CoreHaptics.h>
+#import <AudioToolbox/AudioToolbox.h>
 
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0
 
@@ -65,6 +67,37 @@ static UINotificationFeedbackGenerator* getNotificationGenerator(void) {
     return _notificationGenerator;
 }
 
+static int s_deviceTier = -1;
+
+static int computeDeviceTier(void) {
+    if (@available(iOS 13.0, *)) {
+        if ([CHHapticEngine capabilitiesForHardware].supportsHaptics) return 3;
+    }
+    struct utsname systemInfo;
+    uname(&systemInfo);
+    NSString* machine = [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
+    if ([machine hasPrefix:@"iPad"] || [machine hasPrefix:@"iPod"]) return 0;
+    if ([machine hasPrefix:@"iPhone"]) {
+        NSScanner* scanner = [NSScanner scannerWithString:[machine substringFromIndex:6]];
+        NSInteger major = 0;
+        if ([scanner scanInteger:&major] && major >= 9) return 2;
+        return 1;
+    }
+    return 1;
+}
+
+static int deviceTier(void) {
+    if (s_deviceTier < 0) {
+        s_deviceTier = computeDeviceTier();
+        KATLAB_LOG_INFO(@"device tier resolved to %d", s_deviceTier);
+    }
+    return s_deviceTier;
+}
+
+static void playLegacyVibrate(void) {
+    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+}
+
 void _Haptics_Impact(int style) {
 #if TARGET_OS_SIMULATOR
     static BOOL warned = NO;
@@ -72,6 +105,10 @@ void _Haptics_Impact(int style) {
     return;
 #else
     KATLAB_LOG_INFO(@"Impact(style=%d)", style);
+    if (deviceTier() < 2) {
+        playLegacyVibrate();
+        return;
+    }
     UIImpactFeedbackGenerator* generator = getImpactGenerator(style);
     [generator prepare];
     [generator impactOccurred];
@@ -85,6 +122,10 @@ void _Haptics_Notification(int type) {
     return;
 #else
     KATLAB_LOG_INFO(@"Notification(type=%d)", type);
+    if (deviceTier() < 2) {
+        playLegacyVibrate();
+        return;
+    }
     UINotificationFeedbackGenerator* generator = getNotificationGenerator();
     [generator prepare];
     [generator notificationOccurred:(UINotificationFeedbackType)type];
@@ -104,15 +145,7 @@ int _Haptics_GetCapability(void) {
 #if TARGET_OS_SIMULATOR
     return 0; // None
 #else
-    if (@available(iOS 13.0, *)) {
-        if ([CHHapticEngine capabilitiesForHardware].supportsHaptics) {
-            KATLAB_LOG_INFO(@"capability: Rich (Core Haptics + supportsHaptics)");
-            return 3; // Rich
-        }
-    }
-    // iOS 10–12 with Taptic Engine — UIImpact / UINotification work, but rich patterns can't be played.
-    KATLAB_LOG_INFO(@"capability: Basic (no Core Haptics support)");
-    return 2; // Basic
+    return deviceTier();
 #endif
 }
 
@@ -134,6 +167,7 @@ static CHHapticEngine* _Haptics_GetEngine(void) {
             s_engine = nil;
             return;
         }
+        s_engine.playsHapticsOnly = YES;
         KATLAB_LOG_INFO(@"CHHapticEngine initialised");
 
         // Engine can stop on app background, AVAudioSession route changes, hardware reset, etc.
@@ -183,7 +217,10 @@ void _Haptics_PlayPattern(const long* timings, int timingCount, const int* ampli
         KATLAB_LOG_INFO(@"PlayPattern: timingCount=%d amplitudeCount=%d", timingCount, amplitudeCount);
 
         CHHapticEngine* engine = _Haptics_GetEngine();
-        if (!engine) return;
+        if (!engine) {
+            playLegacyVibrate();
+            return;
+        }
 
         NSMutableArray<CHHapticEvent*>* events = [NSMutableArray array];
         double time = 0;
@@ -243,7 +280,10 @@ void _Haptics_PlayEvents(const KatlabHapticEvent* events_in, int count) {
         KATLAB_LOG_INFO(@"PlayEvents: count=%d", count);
 
         CHHapticEngine* engine = _Haptics_GetEngine();
-        if (!engine) return;
+        if (!engine) {
+            playLegacyVibrate();
+            return;
+        }
 
         NSMutableArray<CHHapticEvent*>* events = [NSMutableArray arrayWithCapacity:count];
         for (int i = 0; i < count; i++) {

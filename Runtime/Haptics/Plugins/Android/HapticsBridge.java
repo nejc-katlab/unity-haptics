@@ -179,10 +179,17 @@ public class HapticsBridge {
                     VibrationEffect.Composition.PRIMITIVE_CLICK,
                     VibrationEffect.Composition.PRIMITIVE_TICK
                 };
-                if (vibrator.areAllPrimitivesSupported(required)) {
+                boolean primitivesReported = vibrator.areAllPrimitivesSupported(required);
+                boolean primitiveReportingReliable =
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S || vibrator.hasAmplitudeControl();
+                if (primitivesReported && primitiveReportingReliable) {
                     logI("capability: Rich (Composition primitives supported, API " + Build.VERSION.SDK_INT + ")");
                     cachedCapability = 3;
                     return 3;
+                }
+                if (primitivesReported && !primitiveReportingReliable) {
+                    logW("capability: primitives reported supported on API " + Build.VERSION.SDK_INT
+                        + " but no amplitude control — treating as not Rich to avoid silent compositions on ERM");
                 }
             } catch (Throwable t) {
                 logW("capability: areAllPrimitivesSupported threw: " + t.getMessage());
