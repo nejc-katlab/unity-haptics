@@ -19,5 +19,7 @@ namespace Katlab.Haptics.Application
 
         /// <summary>Default no-op; override on services that have a native side to forward to.</summary>
         public virtual void SetLogLevel(HapticsLogLevel level) { }
+
+        public virtual void SetCapabilityOverride(HapticCapability? capability) { }
     }
 }

@@ -43,7 +43,7 @@ Haptics.Notification(HapticNotificationType.Error);
 // Android: vibrate for duration
 Haptics.Vibrate(100);
 
-// Legacy waveform pattern (timings: vibrate, pause, vibrate, pause...)
+// Legacy waveform pattern (timings: pause, vibrate, pause, vibrate...)
 var doubleTap = HapticPattern.CreateWaveform(new long[] { 0, 50, 50, 50 }, null);
 Haptics.PlayPattern(doubleTap);
 
@@ -72,7 +72,7 @@ if (Haptics.IsSupported) { /* ... */ }
 
 | Member | Signature | Description |
 |--------|-----------|-------------|
-| `IsSupported` | `bool` | Whether haptics are supported on the current device. `false` in Editor, iOS Simulator, and unsupported platforms. |
+| `IsSupported` | `bool` | Whether haptics are supported on the current device. `false` in Editor, iOS Simulator, iPad / iPod touch, and unsupported platforms. |
 | `Capability` | `HapticCapability` | Detected hardware tier (`None` / `Minimal` / `Basic` / `Rich`). Settable to force a tier for testing. See [Capability tiers](#capability-tiers-and-tier-aware-playback). |
 | `ResetCapability` | `void ResetCapability()` | Clears any explicit override and returns to auto-detection. |
 | `PlayPreset` | `void PlayPreset(HapticPreset preset)` | Plays the variant of `preset` matching the current `Capability`. |
@@ -107,7 +107,7 @@ if (Haptics.IsSupported) { /* ... */ }
 
 Immutable pattern. Two flavors:
 
-1. **Legacy waveform** — `Timings` (alternating vibrate/pause durations in milliseconds) plus optional `Amplitudes` (length should match `Timings`; values at vibrate positions are used; 0–255).
+1. **Legacy waveform** — `Timings` (alternating pause/vibrate durations in milliseconds, starting with a pause, as in Android's `createWaveform`) plus optional `Amplitudes` (length should match `Timings`; every slot with a non-zero amplitude vibrates; 0–255).
 2. **Rich events** — `Events` array; on iOS this drives Core Haptics directly with per-event intensity + sharpness; on Android it's translated to a best-effort waveform.
 
 | Static Method | Signature | Description |
@@ -245,8 +245,8 @@ The Rich variant uses Core Haptics-style layered events. Basic uses a longer wav
 
 ### HapticPattern
 
-- **Timings:** Must be non-null and non-empty. Empty patterns are ignored.
-- **Amplitudes:** Optional. When provided, length should match `Timings`; values at vibrate positions (even indices) are used.
+- **Timings:** Must be non-null and non-empty, with no negative values and at least one non-zero value. Invalid patterns are ignored with a warning. Slots alternate pause/vibrate starting with a pause (odd indices vibrate), so start with `0` to vibrate immediately.
+- **Amplitudes:** Optional. When provided, length should match `Timings`; every slot with a non-zero amplitude vibrates at that strength. Out-of-range values are clamped to 0–255.
 - **Units (legacy):** All timings in milliseconds, amplitudes 0–255.
 - **Units (rich events):** Time and Duration in seconds, Intensity and Sharpness 0..1.
 

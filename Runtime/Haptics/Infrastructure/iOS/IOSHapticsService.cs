@@ -34,7 +34,7 @@ namespace Katlab.Haptics.Infrastructure.iOS
                     if (_isSupported.Value == 0 && !_unsupportedWarned)
                     {
                         _unsupportedWarned = true;
-                        HapticsLog.Warning("iOS haptics not supported on this device (likely simulator)");
+                        HapticsLog.Warning("iOS haptics not supported on this device (simulator, iPad, or iPod touch)");
                     }
                 }
                 return _isSupported.Value != 0;
@@ -44,6 +44,11 @@ namespace Katlab.Haptics.Infrastructure.iOS
         public override void SetLogLevel(HapticsLogLevel level)
         {
             IOSHapticsNative.SetLogLevel((int)level);
+        }
+
+        public override void SetCapabilityOverride(HapticCapability? capability)
+        {
+            IOSHapticsNative.SetCapabilityOverride(capability.HasValue ? (int)capability.Value : -1);
         }
 
         public override void Impact(HapticImpactStyle style)

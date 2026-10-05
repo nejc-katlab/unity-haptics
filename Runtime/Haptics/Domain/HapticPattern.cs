@@ -5,8 +5,10 @@ namespace Katlab.Haptics.Domain
     /// <list type="bullet">
     ///   <item>
     ///     <description><b>Legacy waveform</b> (<see cref="Timings"/> + optional <see cref="Amplitudes"/>):
-    ///     timings alternate vibrate/pause (indices 0, 2, 4… = vibrate). Amplitudes are sampled at
-    ///     vibrate positions; the array length should match <see cref="Timings"/>.</description>
+    ///     follows Android's <c>createWaveform</c> convention. Timings alternate pause/vibrate starting
+    ///     with a pause (indices 1, 3, 5… = vibrate), so patterns usually begin with a 0. When amplitudes
+    ///     are given the array length should match <see cref="Timings"/> and every slot with a non-zero
+    ///     amplitude vibrates at that strength.</description>
     ///   </item>
     ///   <item>
     ///     <description><b>Rich events</b> (<see cref="Events"/>): per-event time, duration, intensity,
@@ -43,13 +45,13 @@ namespace Katlab.Haptics.Domain
         /// </summary>
         public static HapticPattern CreateOneShot(long durationMs, int amplitude = -1)
         {
-            return new HapticPattern(new[] { durationMs }, amplitude >= 0 ? new[] { amplitude } : null);
+            return new HapticPattern(new[] { 0L, durationMs }, amplitude >= 0 ? new[] { 0, amplitude } : null);
         }
 
         /// <summary>
-        /// Creates a waveform pattern. Timings: vibrate, pause, vibrate, pause...
-        /// Amplitudes optional; when provided, length should match <paramref name="timings"/> and amplitude
-        /// values at vibrate positions (even indices) are used.
+        /// Creates a waveform pattern. Timings: pause, vibrate, pause, vibrate... (start with 0 to vibrate
+        /// immediately). Amplitudes optional; when provided, length should match <paramref name="timings"/>
+        /// and every slot with a non-zero amplitude (1-255) vibrates at that strength.
         /// </summary>
         public static HapticPattern CreateWaveform(long[] timings, int[] amplitudes = null)
         {

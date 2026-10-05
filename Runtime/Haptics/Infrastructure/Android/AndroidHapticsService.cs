@@ -12,40 +12,48 @@ namespace Katlab.Haptics.Infrastructure.Android
         private static bool? _isSupported;
         private static bool _unsupportedWarned;
         private static HapticCapability? _capability;
+        private static bool _initFailureLogged;
 
         // The Java bridge is engine-agnostic and requires init(Context) before any other call.
         // Unity is the one consumer that must do that wiring; we fetch the activity via JNI and
         // hand it over once. Idempotent and cheap after the first call.
-        private static void EnsureInit()
+        private static bool EnsureInit()
         {
-            if (_initialized) return;
-            _initialized = true;
+            if (_initialized) return true;
             try
             {
                 using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
                 {
                     AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
-                    if (activity != null)
+                    if (activity == null)
                     {
-                        BridgeClass.CallStatic("init", activity);
+                        LogInitFailureOnce("AndroidHapticsService: UnityPlayer.currentActivity returned null — haptics no-op until it is available");
+                        return false;
                     }
-                    else
-                    {
-                        HapticsLog.Error("AndroidHapticsService: UnityPlayer.currentActivity returned null — bridge will no-op");
-                    }
+                    BridgeClass.CallStatic("init", activity);
+                    _initialized = true;
+                    return true;
                 }
             }
             catch (System.Exception e)
             {
-                HapticsLog.Error($"AndroidHapticsService init failed: {e.Message}");
+                LogInitFailureOnce($"AndroidHapticsService init failed: {e.Message}");
+                return false;
             }
+        }
+
+        private static void LogInitFailureOnce(string message)
+        {
+            if (_initFailureLogged) return;
+            _initFailureLogged = true;
+            HapticsLog.Error(message);
         }
 
         public override HapticCapability Capability
         {
             get
             {
-                EnsureInit();
+                if (!EnsureInit()) return HapticCapability.None;
                 if (!_capability.HasValue)
                 {
                     int raw = BridgeClass.CallStatic<int>("getCapability");
@@ -60,7 +68,7 @@ namespace Katlab.Haptics.Infrastructure.Android
         {
             get
             {
-                EnsureInit();
+                if (!EnsureInit()) return false;
                 if (!_isSupported.HasValue)
                 {
                     _isSupported = BridgeClass.CallStatic<bool>("isSupported");
@@ -78,6 +86,11 @@ namespace Katlab.Haptics.Infrastructure.Android
         {
             EnsureInit();
             BridgeClass.CallStatic("setLogLevel", (int)level);
+        }
+
+        public override void SetCapabilityOverride(HapticCapability? capability)
+        {
+            BridgeClass.CallStatic("setCapabilityOverride", capability.HasValue ? (int)capability.Value : -1);
         }
 
         public override void Impact(HapticImpactStyle style)
@@ -129,16 +142,68 @@ namespace Katlab.Haptics.Infrastructure.Android
                 return;
             }
 
-            if (pattern.Timings == null || pattern.Timings.Length == 0)
-            {
-                HapticsLog.Warning("PlayPattern called with empty pattern (no timings, no events) — ignored");
+            if (!TryNormalizeWaveform(pattern.Timings, pattern.Amplitudes, out long[] waveTimings, out int[] waveAmplitudes))
                 return;
-            }
 
             if (HapticsLog.IsEnabled(HapticsLogLevel.Info))
-                HapticsLog.Info($"native vibratePattern timings=[{string.Join(",", pattern.Timings)}] " +
-                                $"amplitudes={(pattern.Amplitudes == null ? "null" : "[" + string.Join(",", pattern.Amplitudes) + "]")}");
-            BridgeClass.CallStatic("vibratePattern", pattern.Timings, pattern.Amplitudes);
+                HapticsLog.Info($"native vibratePattern timings=[{string.Join(",", waveTimings)}] " +
+                                $"amplitudes={(waveAmplitudes == null ? "null" : "[" + string.Join(",", waveAmplitudes) + "]")}");
+            BridgeClass.CallStatic("vibratePattern", waveTimings, waveAmplitudes);
+        }
+
+        private static bool TryNormalizeWaveform(long[] timings, int[] amplitudes, out long[] outTimings, out int[] outAmplitudes)
+        {
+            outTimings = timings;
+            outAmplitudes = null;
+            if (timings == null || timings.Length == 0)
+            {
+                HapticsLog.Warning("PlayPattern called with empty pattern (no timings, no events) — ignored");
+                return false;
+            }
+
+            bool anyNonZero = false;
+            for (int i = 0; i < timings.Length; i++)
+            {
+                if (timings[i] < 0)
+                {
+                    HapticsLog.Warning($"PlayPattern: negative timing {timings[i]} at index {i} — ignored");
+                    return false;
+                }
+                if (timings[i] > 0) anyNonZero = true;
+            }
+            if (!anyNonZero)
+            {
+                HapticsLog.Warning("PlayPattern: all timings are zero — ignored");
+                return false;
+            }
+
+            if (amplitudes == null || amplitudes.Length == 0) return true;
+
+            bool lengthMismatch = amplitudes.Length != timings.Length;
+            bool needsCopy = lengthMismatch;
+            for (int i = 0; !needsCopy && i < amplitudes.Length; i++)
+            {
+                if (amplitudes[i] < -1 || amplitudes[i] > 255) needsCopy = true;
+            }
+            if (!needsCopy)
+            {
+                outAmplitudes = amplitudes;
+                return true;
+            }
+
+            if (lengthMismatch)
+                HapticsLog.Warning($"PlayPattern: amplitudes length {amplitudes.Length} does not match timings length {timings.Length} — padding with 0 / truncating");
+
+            int[] normalized = new int[timings.Length];
+            for (int i = 0; i < normalized.Length; i++)
+            {
+                int amp = i < amplitudes.Length ? amplitudes[i] : 0;
+                if (amp < -1) amp = -1;
+                if (amp > 255) amp = 255;
+                normalized[i] = amp;
+            }
+            outAmplitudes = normalized;
+            return true;
         }
 
         // Best-effort translation from rich Core Haptics-style events to an Android waveform.

@@ -22,5 +22,7 @@ namespace Katlab.Haptics.Application
         /// bridges). Default implementation is a no-op for services that have no native side.
         /// </summary>
         void SetLogLevel(HapticsLogLevel level);
+
+        void SetCapabilityOverride(HapticCapability? capability);
     }
 }

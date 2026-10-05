@@ -89,8 +89,8 @@ public final class HapticsPatternBuilder {
     public void play() {
         if (events.isEmpty()) return;
 
-        // (vibrate, pause) pairs per event => up to 2*N + 1 entries. Always start with a leading 0
-        // pause so even-indexed slots are vibrate slots (matches Android's createWaveform expectation).
+        // (pause, vibrate) pairs per event => up to 2*N + 1 entries. Starts with a leading 0 pause
+        // (Android's createWaveform is off-first); each slot's amplitude decides whether it vibrates.
         ArrayList<Long> timings = new ArrayList<>(events.size() * 2 + 1);
         ArrayList<Integer> amplitudes = new ArrayList<>(events.size() * 2 + 1);
         timings.add(0L);

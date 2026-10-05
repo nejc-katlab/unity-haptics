@@ -145,7 +145,7 @@ namespace Katlab.Haptics
         //  Basic-tier variants (ERM with amplitude control). Pulses ≥30 ms so
         //  the motor has time to ramp up; amplitude curves convey "weight".
         //  Format: HapticPattern.CreateWaveform(timings_ms, amplitudes_0_to_255).
-        //  Even-indexed timings are vibrate; odd-indexed are pause. Amplitude
+        //  Even-indexed timings are pause; odd-indexed are vibrate. Amplitude
         //  array length matches timings; entries at vibrate slots set RPM target.
         // ─────────────────────────────────────────────────────────────────────
 

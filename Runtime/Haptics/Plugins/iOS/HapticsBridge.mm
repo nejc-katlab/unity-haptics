@@ -94,6 +94,19 @@ static int deviceTier(void) {
     return s_deviceTier;
 }
 
+static int s_capabilityOverride = -1;
+
+static int effectiveTier(void) {
+    int tier = deviceTier();
+    if (s_capabilityOverride >= 0 && s_capabilityOverride < tier) return s_capabilityOverride;
+    return tier;
+}
+
+void _Haptics_SetCapabilityOverride(int capability) {
+    s_capabilityOverride = capability;
+    KATLAB_LOG_INFO(@"capability override set to %d", capability);
+}
+
 static void playLegacyVibrate(void) {
     AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
 }
@@ -105,7 +118,7 @@ void _Haptics_Impact(int style) {
     return;
 #else
     KATLAB_LOG_INFO(@"Impact(style=%d)", style);
-    if (deviceTier() < 2) {
+    if (effectiveTier() < 2) {
         playLegacyVibrate();
         return;
     }
@@ -122,7 +135,7 @@ void _Haptics_Notification(int type) {
     return;
 #else
     KATLAB_LOG_INFO(@"Notification(type=%d)", type);
-    if (deviceTier() < 2) {
+    if (effectiveTier() < 2) {
         playLegacyVibrate();
         return;
     }
@@ -136,7 +149,7 @@ int _Haptics_IsSupported(void) {
 #if TARGET_OS_SIMULATOR
     return 0;
 #else
-    return 1;
+    return deviceTier() > 0 ? 1 : 0;
 #endif
 }
 
@@ -223,21 +236,35 @@ void _Haptics_PlayPattern(const long* timings, int timingCount, const int* ampli
         }
 
         NSMutableArray<CHHapticEvent*>* events = [NSMutableArray array];
+        BOOL hasAmplitudes = amplitudes && amplitudeCount > 0;
         double time = 0;
         for (int i = 0; i < timingCount; i++) {
             long t = timings[i];
-            if (i % 2 == 0) {
-                // Vibrate slot. Amplitudes follow the same-length-as-timings convention,
-                // so we sample amplitudes[i] (not amplitudes[i/2]).
-                float intensity = 1.0f;
-                if (amplitudes && i < amplitudeCount && amplitudes[i] >= 0) {
-                    intensity = (float)amplitudes[i] / 255.0f;
+            if (t <= 0) continue;
+            // Android createWaveform convention: with amplitudes, any slot whose amplitude is non-zero
+            // vibrates (negative = default strength); without amplitudes, slots alternate pause/vibrate
+            // starting with a pause, so odd indices vibrate.
+            BOOL vibrate;
+            float intensity = 1.0f;
+            if (hasAmplitudes) {
+                int amplitude = i < amplitudeCount ? amplitudes[i] : 0;
+                vibrate = amplitude != 0;
+                if (amplitude > 0) {
+                    intensity = (float)amplitude / 255.0f;
                     if (intensity > 1.0f) intensity = 1.0f;
                 }
+            } else {
+                vibrate = (i % 2 == 1);
+            }
+            if (vibrate) {
                 CHHapticEventParameter* intensityParam = [[CHHapticEventParameter alloc] initWithParameterID:CHHapticEventParameterIDHapticIntensity value:intensity];
                 CHHapticEventParameter* sharpnessParam = [[CHHapticEventParameter alloc] initWithParameterID:CHHapticEventParameterIDHapticSharpness value:0.5f];
-                CHHapticEvent* event = [[CHHapticEvent alloc] initWithEventType:CHHapticEventTypeHapticTransient parameters:@[intensityParam, sharpnessParam] relativeTime:time / 1000.0];
+                CHHapticEvent* event = [[CHHapticEvent alloc] initWithEventType:CHHapticEventTypeHapticContinuous
+                                                                     parameters:@[intensityParam, sharpnessParam]
+                                                                   relativeTime:time / 1000.0
+                                                                       duration:(double)t / 1000.0];
                 [events addObject:event];
+                KATLAB_LOG_DEBUG(@"  [%d] vibrate t=%.3fs dur=%.3fs intensity=%.2f", i, time / 1000.0, (double)t / 1000.0, intensity);
             }
             time += t;
         }
@@ -264,6 +291,8 @@ void _Haptics_PlayPattern(const long* timings, int timingCount, const int* ampli
         if (error) {
             KATLAB_LOG_ERROR(@"player startAtTime failed: %@", error.localizedDescription ?: @"(no description)");
         }
+    } else {
+        playLegacyVibrate();
     }
 #endif
 }
@@ -342,6 +371,8 @@ void _Haptics_PlayEvents(const KatlabHapticEvent* events_in, int count) {
         if (error) {
             KATLAB_LOG_ERROR(@"player startAtTime failed: %@", error.localizedDescription ?: @"(no description)");
         }
+    } else {
+        playLegacyVibrate();
     }
 #endif
 }

@@ -29,6 +29,7 @@ namespace Katlab.Haptics
             {
                 _capabilityOverride = value;
                 HapticsLog.Info($"capability override set to {value}");
+                HapticsServiceFactory.Get().SetCapabilityOverride(value);
             }
         }
 
@@ -37,6 +38,7 @@ namespace Katlab.Haptics
         {
             _capabilityOverride = null;
             HapticsLog.Info("capability override cleared");
+            HapticsServiceFactory.Get().SetCapabilityOverride(null);
         }
 
         /// <summary>
@@ -113,10 +115,12 @@ namespace Katlab.Haptics
         /// rich events (see <see cref="HapticPattern.FromEvents"/>); legacy timing/amplitude patterns also work.
         /// On Android uses VibrationEffect; rich events are translated to a best-effort waveform.
         /// </summary>
-        public static void PlayPattern(HapticPattern pattern)
+        public static void PlayPattern(HapticPattern pattern) => PlayPattern(pattern, 0);
+
+        private static void PlayPattern(HapticPattern pattern, int throttleSubKey)
         {
             if (HapticsLog.IsEnabled(HapticsLogLevel.Info)) HapticsLog.Info(DescribePattern(pattern));
-            if (!HapticsThrottle.ShouldFire(ThrottleKey.PlayPattern, 0)) return;
+            if (!HapticsThrottle.ShouldFire(ThrottleKey.PlayPattern, throttleSubKey)) return;
             HapticsServiceFactory.Get().PlayPattern(pattern);
         }
 
@@ -130,7 +134,7 @@ namespace Katlab.Haptics
         {
             if (HapticsLog.IsEnabled(HapticsLogLevel.Info))
                 HapticsLog.Info($"PlayPreset({preset}) on capability {Capability}");
-            PlayPattern(HapticPresets.Get(preset, Capability));
+            PlayPattern(HapticPresets.Get(preset, Capability), (int)preset + 1);
         }
 
         // Multi-line description for Debug-level logging. Only invoked inside an IsEnabled gate.

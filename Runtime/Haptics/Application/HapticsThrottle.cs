@@ -13,7 +13,7 @@ namespace Katlab.Haptics.Application
         // One slot per (kind, sub-key) pair. The sub-key lets us throttle different impact styles
         // independently (e.g. Light spam doesn't suppress an unrelated Heavy hit).
         private const int KindCount = 4;        // Impact, Notification, Vibrate, PlayPattern
-        private const int SubKeyCount = 8;      // enough for 5 impact styles / 3 notification types
+        private const int SubKeyCount = 16;     // enough for 5 impact styles / 3 notification types / 13 presets + raw patterns
         private static readonly long[] LastFireTicks = new long[KindCount * SubKeyCount];
         private static readonly Stopwatch Clock = Stopwatch.StartNew();
 

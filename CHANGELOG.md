@@ -4,6 +4,45 @@ All notable changes to this package are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the package adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.3] - 2026-10-05
+
+### Fixed
+- **iOS: legacy waveform patterns now follow the same slot convention as Android.** Waveforms
+  are off-first (`pause, vibrate, pause, vibrate…`, as in Android's `createWaveform`), and when
+  amplitudes are given every slot with a non-zero amplitude vibrates. The iOS bridge previously
+  treated even indices as vibrate slots, so the Basic preset variants were silent and the Minimal
+  variants played time-shifted taps on a Core Haptics iPhone with `Haptics.Capability` forced to
+  `Basic` / `Minimal`. Vibrate slots are now rendered as continuous Core Haptics events of the
+  slot's duration and intensity instead of fixed transients.
+- **`HapticPattern.CreateOneShot` without an amplitude was silent on Android.** It now emits an
+  off-first waveform (`{0, duration}`), which vibrates on both platforms.
+- **Android: malformed patterns can no longer crash the app.** `PlayPattern` rejects negative
+  or all-zero timings with a warning, clamps amplitudes to 0–255 and pads / truncates an
+  amplitude array whose length does not match the timings. The Java `vibratePattern`,
+  `notification` and `vibrate` calls are wrapped in `try/catch` like `impact` already was.
+- **Android: a failed first init no longer disables haptics for the whole session.** The C#
+  service only latches as initialised once `HapticsBridge.init` has succeeded, and does not cache
+  `IsSupported` / `Capability` before that, so a null `currentActivity` at startup is retried on
+  the next call. `HapticsBridge.init` called first with a non-Activity context now upgrades when
+  later given an Activity.
+- **Android: `Impact` falls back to the Vibrator when `performHapticFeedback` does not fire.**
+  The decor view is looked up per call instead of being cached at init, and a `false` return or
+  exception on the UI thread now plays the composition / one-shot path instead of nothing.
+- **iOS: pattern playback on iOS 12 and older falls back to the legacy vibrate** instead of
+  doing nothing.
+- **Throttling: each preset has its own throttle slot.** `PlayPreset` calls for different
+  presets no longer suppress each other (or raw `PlayPattern` calls) inside the throttle window.
+
+### Changed
+- **iOS: `Haptics.IsSupported` is now `false` on iPad and iPod touch**, which have no haptic
+  hardware. It previously returned `true` on every non-simulator device.
+- **`Haptics.Capability` overrides are forwarded to the native bridges**, so `Impact` and
+  `Notification` respect a forced lower tier. An override can only lower the tier the native
+  side uses; forcing a tier above what the hardware reports does not enable paths the device
+  cannot render.
+- `IHapticsService` gained `SetCapabilityOverride(HapticCapability?)` (no-op by default in
+  `HapticsService`).
+
 ## [1.6.2] - 2026-06-09
 
 ### Fixed

@@ -42,6 +42,9 @@ namespace Katlab.Haptics.Infrastructure.iOS
 
         [DllImport(LibraryName, EntryPoint = "_Haptics_SetLogLevel")]
         public static extern void SetLogLevel(int level);
+
+        [DllImport(LibraryName, EntryPoint = "_Haptics_SetCapabilityOverride")]
+        public static extern void SetCapabilityOverride(int capability);
 #endif
     }
 }

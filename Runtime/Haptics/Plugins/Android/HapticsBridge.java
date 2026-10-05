@@ -23,7 +23,6 @@ public class HapticsBridge {
     private static Vibrator vibrator;
     private static Context context;
     private static Activity activity;
-    private static View decorView;
     private static boolean initWarned;
 
     private static final long[] NOTIFICATION_SUCCESS_PATTERN = new long[]{0, 30};
@@ -31,6 +30,7 @@ public class HapticsBridge {
 
     private static VibrationEffect[] notificationEffects;
     private static int cachedCapability = -1;
+    private static int capabilityOverride = -1;
     private static int cachedLightPrimitive = -1;
 
     private static final String TAG = "katlab.Haptics";
@@ -52,21 +52,22 @@ public class HapticsBridge {
      * path); a non-Activity Context still works for the Vibrator fallback ladder.
      */
     public static void init(Context ctx) {
-        if (context != null) return;
         if (ctx == null) {
             logE("init: context is null");
             return;
         }
-        context = ctx.getApplicationContext();
+        if (context != null) {
+            if (activity == null && ctx instanceof Activity) {
+                activity = (Activity) ctx;
+                logI("init: upgraded to Activity — performHapticFeedback path enabled");
+            }
+            return;
+        }
+        Context appContext = ctx.getApplicationContext();
+        context = appContext != null ? appContext : ctx;
         if (ctx instanceof Activity) {
             activity = (Activity) ctx;
-            try {
-                decorView = activity.getWindow().getDecorView();
-                logI("init: Activity available — performHapticFeedback path enabled");
-            } catch (Throwable t) {
-                logW("init: getDecorView threw: " + t.getMessage() + " — performHapticFeedback path disabled");
-                decorView = null;
-            }
+            logI("init: Activity available — performHapticFeedback path enabled");
         } else {
             logI("init: ctx is not an Activity — performHapticFeedback path disabled, using Vibrator only");
         }
@@ -205,6 +206,17 @@ public class HapticsBridge {
         return 1;
     }
 
+    public static void setCapabilityOverride(int capability) {
+        capabilityOverride = capability;
+        logI("capability override set to " + capability);
+    }
+
+    private static int effectiveCapability() {
+        int detected = getCapability();
+        if (capabilityOverride >= 0 && capabilityOverride < detected) return capabilityOverride;
+        return detected;
+    }
+
     private static int feedbackConstantForStyle(int style) {
         switch (style) {
             case 0:
@@ -232,27 +244,28 @@ public class HapticsBridge {
         }
     }
 
-    private static boolean playPerformHapticFeedback(int style) {
+    private static boolean playPerformHapticFeedback(final int style, final int cap) {
         final Activity act = activity;
-        final View view = decorView;
-        if (act == null || view == null) {
-            logD("impact: no Activity/View — skipping performHapticFeedback path");
+        if (act == null) {
+            logD("impact: no Activity — skipping performHapticFeedback path");
             return false;
         }
         final int constant = feedbackConstantForStyle(style);
-        final int styleCopy = style;
         try {
             act.runOnUiThread(new Runnable() {
                 @Override public void run() {
+                    boolean ok = false;
                     try {
-                        boolean ok = view.performHapticFeedback(constant);
-                        if (ok) {
-                            logI("impact: performHapticFeedback fired (style=" + styleCopy + ", constant=" + constant + ")");
-                        } else {
-                            logW("impact: performHapticFeedback returned false (style=" + styleCopy + ", constant=" + constant + ") — user may have haptics disabled, or constant unsupported");
-                        }
+                        View view = act.getWindow().getDecorView();
+                        ok = view != null && view.performHapticFeedback(constant);
                     } catch (Throwable t) {
                         logW("impact: performHapticFeedback threw on UI thread: " + t.getMessage());
+                    }
+                    if (ok) {
+                        logI("impact: performHapticFeedback fired (style=" + style + ", constant=" + constant + ")");
+                    } else {
+                        logW("impact: performHapticFeedback did not fire (style=" + style + ", constant=" + constant + ") — falling back to Vibrator");
+                        playImpactVibrator(style, cap);
                     }
                 }
             });
@@ -263,20 +276,7 @@ public class HapticsBridge {
         }
     }
 
-    public static void impact(int style) {
-        if (!ensureInit()) return;
-        if (vibrator == null) {
-            logW("impact: vibrator unavailable (style=" + style + ")");
-            return;
-        }
-        logI("impact(style=" + style + ") API=" + Build.VERSION.SDK_INT);
-
-        int cap = getCapability();
-
-        if (cap >= 3 && playPerformHapticFeedback(style)) {
-            return;
-        }
-
+    private static void playImpactVibrator(int style, int cap) {
         if (cap >= 3 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (playComposition(style)) {
                 logI("impact: composition path (style=" + style + ")");
@@ -308,6 +308,23 @@ public class HapticsBridge {
         }
     }
 
+    public static void impact(int style) {
+        if (!ensureInit()) return;
+        if (vibrator == null) {
+            logW("impact: vibrator unavailable (style=" + style + ")");
+            return;
+        }
+        logI("impact(style=" + style + ") API=" + Build.VERSION.SDK_INT);
+
+        int cap = effectiveCapability();
+
+        if (cap >= 3 && playPerformHapticFeedback(style, cap)) {
+            return;
+        }
+
+        playImpactVibrator(style, cap);
+    }
+
     public static void notification(int type) {
         if (!ensureInit()) return;
         if (vibrator == null) {
@@ -315,16 +332,20 @@ public class HapticsBridge {
             return;
         }
         logI("notification(type=" + type + ") API=" + Build.VERSION.SDK_INT);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ensureNotificationEffects();
-            int index = (type >= 0 && type < notificationEffects.length) ? type : 0;
-            vibrator.vibrate(notificationEffects[index]);
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            long[] pattern = type == 0 ? NOTIFICATION_SUCCESS_PATTERN : NOTIFICATION_WARNING_ERROR_PATTERN;
-            vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1));
-        } else {
-            long[] pattern = type == 0 ? NOTIFICATION_SUCCESS_PATTERN : NOTIFICATION_WARNING_ERROR_PATTERN;
-            vibrator.vibrate(pattern, -1);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ensureNotificationEffects();
+                int index = (type >= 0 && type < notificationEffects.length) ? type : 0;
+                vibrator.vibrate(notificationEffects[index]);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                long[] pattern = type == 0 ? NOTIFICATION_SUCCESS_PATTERN : NOTIFICATION_WARNING_ERROR_PATTERN;
+                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1));
+            } else {
+                long[] pattern = type == 0 ? NOTIFICATION_SUCCESS_PATTERN : NOTIFICATION_WARNING_ERROR_PATTERN;
+                vibrator.vibrate(pattern, -1);
+            }
+        } catch (Throwable t) {
+            logW("notification: vibrate failed (type=" + type + "): " + t.getMessage());
         }
     }
 
@@ -335,10 +356,14 @@ public class HapticsBridge {
             return;
         }
         logI("vibrate(" + milliseconds + "ms)");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE));
-        } else {
-            vibrator.vibrate(milliseconds);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE));
+            } else {
+                vibrator.vibrate(milliseconds);
+            }
+        } catch (Throwable t) {
+            logW("vibrate: failed (" + milliseconds + "ms): " + t.getMessage());
         }
     }
 
@@ -352,14 +377,18 @@ public class HapticsBridge {
             logI("vibratePattern timings.length=" + (timings == null ? 0 : timings.length)
                 + " amplitudes.length=" + (amplitudes == null ? 0 : amplitudes.length));
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (amplitudes == null || amplitudes.length == 0) {
-                vibrator.vibrate(VibrationEffect.createWaveform(timings, -1));
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (amplitudes == null || amplitudes.length == 0) {
+                    vibrator.vibrate(VibrationEffect.createWaveform(timings, -1));
+                } else {
+                    vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1));
+                }
             } else {
-                vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1));
+                vibrator.vibrate(timings, -1);
             }
-        } else {
-            vibrator.vibrate(timings, -1);
+        } catch (Throwable t) {
+            logW("vibratePattern: vibrate failed: " + t.getMessage());
         }
     }
 }
